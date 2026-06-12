@@ -138,7 +138,7 @@ def build_summary(trade_dir: Path, rent_dir: Path, out_path: Path):
     trade_files = sorted(trade_dir.glob("*.csv"))
     for f in trade_files:
         df = pd.read_csv(f, encoding="utf-8-sig")
-        df["거래금액"] = pd.to_numeric(df["거래금액"], errors="coerce")
+        df["거래금액"] = pd.to_numeric(df["거래금액"].astype(str).str.replace(",", ""), errors="coerce")
         df["전용면적"] = pd.to_numeric(df["전용면적"], errors="coerce")
         df["ym"] = f.stem  # 파일명 = YYYYMM
         ym = f.stem
@@ -161,8 +161,8 @@ def build_summary(trade_dir: Path, rent_dir: Path, out_path: Path):
     rent_files = sorted(rent_dir.glob("*.csv"))
     for f in rent_files:
         df = pd.read_csv(f, encoding="utf-8-sig")
-        df["보증금"] = pd.to_numeric(df["보증금"], errors="coerce")
-        df["월세"]   = pd.to_numeric(df["월세"],   errors="coerce")
+        df["보증금"] = pd.to_numeric(df["보증금"].astype(str).str.replace(",", ""), errors="coerce")
+        df["월세"]   = pd.to_numeric(df["월세"].astype(str).str.replace(",", ""),   errors="coerce")
         ym = f.stem
         summary["rent"].append({
             "ym": ym,
