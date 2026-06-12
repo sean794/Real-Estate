@@ -5,6 +5,7 @@
 """
 
 import os
+import math
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
@@ -34,7 +35,6 @@ BASE_RENT_URL  = "http://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataS
 
 
 def get_ym_list(months_back: int = 3):
-    """최근 N개월 YYYYMM 리스트 반환"""
     result = []
     today = datetime.today()
     for i in range(months_back):
@@ -43,8 +43,7 @@ def get_ym_list(months_back: int = 3):
     return result
 
 
-def fetch_trade(gu_name: str, gu_code: str, ym: str) -> list[dict]:
-    """매매 데이터 수집"""
+def fetch_trade(gu_name, gu_code, ym):
     params = {
         "serviceKey": TRADE_API_KEY,
         "LAWD_CD": gu_code,
@@ -61,6 +60,7 @@ def fetch_trade(gu_name: str, gu_code: str, ym: str) -> list[dict]:
             def g(tag):
                 el = item.find(tag)
                 return el.text.strip() if el is not None and el.text else None
+            amt = g("거래금액")
             records.append({
                 "구":        gu_name,
                 "법정동":    g("법정동"),
@@ -68,7 +68,7 @@ def fetch_trade(gu_name: str, gu_code: str, ym: str) -> list[dict]:
                 "전용면적":  g("전용면적"),
                 "층":        g("층"),
                 "건축년도":  g("건축년도"),
-                "거래금액":  g("거래금액").replace(",", "") if g("거래금액") else None,
+                "거래금액":  amt.replace(",", "") if amt else None,
                 "년":        g("년"),
                 "월":        g("월"),
                 "일":        g("일"),
@@ -81,8 +81,7 @@ def fetch_trade(gu_name: str, gu_code: str, ym: str) -> list[dict]:
         return []
 
 
-def fetch_rent(gu_name: str, gu_code: str, ym: str) -> list[dict]:
-    """전월세 데이터 수집"""
+def fetch_rent(gu_name, gu_code, ym):
     params = {
         "serviceKey": RENT_API_KEY,
         "LAWD_CD": gu_code,
@@ -99,6 +98,8 @@ def fetch_rent(gu_name: str, gu_code: str, ym: str) -> list[dict]:
             def g(tag):
                 el = item.find(tag)
                 return el.text.strip() if el is not None and el.text else None
+            deposit = g("보증금액")
+            monthly = g("월세금액")
             records.append({
                 "구":        gu_name,
                 "법정동":    g("법정동"),
@@ -106,8 +107,8 @@ def fetch_rent(gu_name: str, gu_code: str, ym: str) -> list[dict]:
                 "전용면적":  g("전용면적"),
                 "층":        g("층"),
                 "건축년도":  g("건축년도"),
-                "보증금":    g("보증금액").replace(",", "") if g("보증금액") else None,
-                "월세":      g("월세금액").replace(",", "") if g("월세금액") else None,
+                "보증금":    deposit.replace(",", "") if deposit else None,
+                "월세":      monthly.replace(",", "") if monthly else None,
                 "년":        g("년"),
                 "월":        g("월"),
                 "일":        g("일"),
@@ -119,8 +120,7 @@ def fetch_rent(gu_name: str, gu_code: str, ym: str) -> list[dict]:
         return []
 
 
-def save_csv(records: list[dict], path: Path):
-    """데이터프레임으로 변환 후 CSV 저장"""
+def save_csv(records, path):
     if not records:
         print(f"  저장 건너뜀 (데이터 없음): {path}")
         return
@@ -130,17 +130,25 @@ def save_csv(records: list[dict], path: Path):
     print(f"  저장 완료: {path} ({len(df)}행)")
 
 
-def build_summary(trade_dir: Path, rent_dir: Path, out_path: Path):
-    """월별 평균가 요약 JSON 생성 (웹 시각화용)"""
+def clean_nan(obj):
+    """NaN/Infinity를 0으로 변환 (JSON 직렬화 오류 방지)"""
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return 0
+    if isinstance(obj, dict):
+        return {k: clean_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_nan(i) for i in obj]
+    return obj
+
+
+def build_summary(trade_dir, rent_dir, out_path):
     summary = {"trade": [], "rent": [], "updated": datetime.today().strftime("%Y-%m-%d")}
 
-    # 매매 요약
-    trade_files = sorted(trade_dir.glob("*.csv"))
-    for f in trade_files:
+    for f in sorted(trade_dir.glob("*.csv")):
         df = pd.read_csv(f, encoding="utf-8-sig")
-        df["거래금액"] = pd.to_numeric(df["거래금액"].astype(str).str.replace(",", ""), errors="coerce")
-        df["전용면적"] = pd.to_numeric(df["전용면적"], errors="coerce")
-        df["ym"] = f.stem  # 파일명 = YYYYMM
+        df["거래금액"] = pd.to_numeric(
+            df["거래금액"].astype(str).str.replace(",", ""), errors="coerce"
+        )
         ym = f.stem
         per_gu = (
             df.groupby("구")["거래금액"]
@@ -151,48 +159,34 @@ def build_summary(trade_dir: Path, rent_dir: Path, out_path: Path):
         per_gu["ym"] = ym
         summary["trade"].append({
             "ym": ym,
-            "전체평균": round(df["거래금액"].mean(), 0) if not df["거래금액"].isna().all() else 0,
-            "전체중위": round(df["거래금액"].median(), 0) if not df["거래금액"].isna().all() else 0,
+            "전체평균": round(float(df["거래금액"].mean()), 0) if not df["거래금액"].isna().all() else 0,
+            "전체중위": round(float(df["거래금액"].median()), 0) if not df["거래금액"].isna().all() else 0,
             "거래수": len(df),
             "구별": per_gu.to_dict(orient="records"),
         })
 
-    # 전월세 요약
-    rent_files = sorted(rent_dir.glob("*.csv"))
-    for f in rent_files:
+    for f in sorted(rent_dir.glob("*.csv")):
         df = pd.read_csv(f, encoding="utf-8-sig")
         df["보증금"] = pd.to_numeric(df["보증금"].astype(str).str.replace(",", ""), errors="coerce")
         df["월세"]   = pd.to_numeric(df["월세"].astype(str).str.replace(",", ""),   errors="coerce")
         ym = f.stem
         summary["rent"].append({
             "ym": ym,
-            "평균보증금": round(df["보증금"].mean(), 0) if not df["보증금"].isna().all() else 0,
-            "평균월세":   round(df["월세"].mean(), 0)   if not df["월세"].isna().all() else 0,
+            "평균보증금": round(float(df["보증금"].mean()), 0) if not df["보증금"].isna().all() else 0,
+            "평균월세":   round(float(df["월세"].mean()), 0)   if not df["월세"].isna().all() else 0,
             "거래수": len(df),
         })
 
+    # NaN 제거 후 저장
+    summary = clean_nan(summary)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    import math
-
-def clean_nan(obj):
-    if isinstance(obj, float) and math.isnan(obj):
-        return 0
-    if isinstance(obj, dict):
-        return {k: clean_nan(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [clean_nan(i) for i in obj]
-    return obj
-
-summary = clean_nan(summary)
-with open(out_path, "w", encoding="utf-8") as fp:
-    json.dump(summary, fp, ensure_ascii=False, indent=2)
-
-    
+    with open(out_path, "w", encoding="utf-8") as fp:
+        json.dump(summary, fp, ensure_ascii=False, indent=2)
     print(f"요약 JSON 저장: {out_path}")
 
 
 def main():
-    ym_list = get_ym_list(months_back=3)  # 최근 3개월
+    ym_list = get_ym_list(months_back=3)
     print(f"수집 대상 월: {ym_list}")
 
     trade_dir = Path("data/apt_trade")
