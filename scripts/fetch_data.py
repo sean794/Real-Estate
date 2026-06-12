@@ -172,8 +172,22 @@ def build_summary(trade_dir: Path, rent_dir: Path, out_path: Path):
         })
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as fp:
-        json.dump(summary, fp, ensure_ascii=False, indent=2)
+    import math
+
+def clean_nan(obj):
+    if isinstance(obj, float) and math.isnan(obj):
+        return 0
+    if isinstance(obj, dict):
+        return {k: clean_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_nan(i) for i in obj]
+    return obj
+
+summary = clean_nan(summary)
+with open(out_path, "w", encoding="utf-8") as fp:
+    json.dump(summary, fp, ensure_ascii=False, indent=2)
+
+    
     print(f"요약 JSON 저장: {out_path}")
 
 
