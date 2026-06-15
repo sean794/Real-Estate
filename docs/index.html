@@ -7,224 +7,125 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg:        #0b0f1a;
-    --surface:   #131929;
-    --surface2:  #1a2340;
-    --border:    #1e2d4a;
-    --blue:      #3b7cf4;
-    --blue-dim:  #1e3f7a;
-    --amber:     #f59e0b;
-    --amber-dim: #6b4200;
-    --teal:      #14b8a6;
-    --red:       #f87171;
-    --text:      #e2e8f0;
-    --muted:     #64748b;
-    --tag-bg:    #1e3058;
+    --bg:      #0b0f1a;
+    --surface: #131929;
+    --surface2:#1a2340;
+    --border:  #1e2d4a;
+    --blue:    #3b7cf4;
+    --amber:   #f59e0b;
+    --teal:    #14b8a6;
+    --green:   #22c55e;
+    --yellow:  #eab308;
+    --red:     #f87171;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: "Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-    min-height: 100vh;
-  }
-
-  /* ── 헤더 ── */
   header {
-    padding: 28px 40px 20px;
+    padding: 24px 40px 16px;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
   }
-  header h1 {
-    font-size: 1.35rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #fff;
-  }
+  header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
   #updated-badge {
-    font-size: 0.78rem;
-    color: var(--muted);
-    background: var(--surface2);
-    padding: 3px 10px;
-    border-radius: 99px;
-    border: 1px solid var(--border);
+    font-size: 0.75rem; color: var(--muted);
+    background: var(--surface2); padding: 3px 10px;
+    border-radius: 99px; border: 1px solid var(--border);
   }
 
-  /* ── 필터 바 ── */
+  /* 탭 네비게이션 */
+  .nav-tabs {
+    display: flex; gap: 2px; padding: 0 40px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .nav-tab {
+    padding: 14px 20px; border: none; background: transparent;
+    color: var(--muted); font-size: 0.88rem; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .15s;
+  }
+  .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+  /* 필터 바 */
   .filter-bar {
-    padding: 16px 40px;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    padding: 12px 40px; display: flex; gap: 10px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    position: sticky; top: 0; z-index: 10;
   }
+  .tab-group { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 8px; border: 1px solid var(--border); }
+  .tab-btn { padding: 5px 16px; border: none; border-radius: 6px; background: transparent; color: var(--muted); font-size: 0.82rem; cursor: pointer; transition: all .15s; }
+  .tab-btn.active { background: var(--blue); color: #fff; font-weight: 600; }
+  select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; cursor: pointer; outline: none; }
 
-  .tab-group {
-    display: flex;
-    gap: 4px;
-    background: var(--bg);
-    padding: 4px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-  }
-  .tab-btn {
-    padding: 6px 18px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .tab-btn.active {
-    background: var(--blue);
-    color: #fff;
-    font-weight: 600;
-  }
+  /* 페이지 섹션 */
+  .page { display: none; }
+  .page.active { display: block; }
 
-  select {
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 7px 14px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    outline: none;
-  }
-  select:focus { border-color: var(--blue); }
+  /* KPI */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; padding: 20px 40px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+  .kpi-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing:.06em; }
+  .kpi-value { font-size: 1.5rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+  .kpi-value span { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+  .kpi-change { margin-top: 4px; font-size: 0.75rem; }
+  .kpi-change.up { color: var(--red); } .kpi-change.down { color: var(--teal); }
 
-  /* ── KPI 카드 ── */
-  .kpi-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    padding: 24px 40px;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 22px;
-  }
-  .kpi-label {
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-  .kpi-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.02em;
-  }
-  .kpi-value span { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
-  .kpi-change {
-    margin-top: 6px;
-    font-size: 0.78rem;
-  }
-  .kpi-change.up   { color: var(--red); }
-  .kpi-change.down { color: var(--teal); }
+  /* 차트 그리드 */
+  .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; padding: 0 40px 20px; }
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 40px 40px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .chart-card h3 { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing:.06em; }
 
-  /* ── 차트 그리드 ── */
-  .chart-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 16px;
-    padding: 0 40px 24px;
+  /* 테이블 */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .data-table th { color: var(--muted); font-weight: 500; text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; }
+  .data-table td { padding: 9px 4px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* 전세가율 신호 배지 */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+  .badge-buy  { background: rgba(34,197,94,.15);  color: var(--green); }
+  .badge-warn { background: rgba(234,179,8,.15);  color: var(--yellow); }
+  .badge-wait { background: rgba(100,116,139,.15); color: var(--muted); }
+
+  /* 진행 바 */
+  .rate-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+  .rate-bar-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+
+  /* 예산 필터 섹션 */
+  .budget-section { padding: 0 40px 40px; }
+  .budget-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .budget-card h3 { font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; text-transform: uppercase; letter-spacing:.06em; }
+  .budget-inputs { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .budget-inputs label { font-size: 0.82rem; color: var(--muted); }
+  .budget-input {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; font-size: 0.88rem; width: 160px; outline: none;
   }
+  .budget-input:focus { border-color: var(--blue); }
+  .budget-btn {
+    background: var(--blue); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 20px; font-size: 0.85rem; cursor: pointer; font-weight: 600;
+  }
+  .budget-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .budget-result-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .budget-result-card .gu-name { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .budget-result-card .price { font-size: 0.85rem; color: var(--amber); margin-bottom: 4px; }
+  .budget-result-card .detail { font-size: 0.75rem; color: var(--muted); }
+  .budget-empty { text-align: center; padding: 40px; color: var(--muted); font-size: 0.88rem; }
+
+  /* 반응형 */
   @media (max-width: 900px) {
-    .chart-grid { grid-template-columns: 1fr; }
-    .filter-bar, .kpi-row, .chart-grid, .bottom-row { padding-left: 16px; padding-right: 16px; }
+    .chart-grid, .bottom-row { grid-template-columns: 1fr; }
+    .filter-bar, .kpi-row, .chart-grid, .bottom-row, .budget-section, .nav-tabs { padding-left: 16px; padding-right: 16px; }
     header { padding-left: 16px; padding-right: 16px; }
   }
 
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-  }
-  .chart-card h3 {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-bottom: 18px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-
-  .bottom-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    padding: 0 40px 40px;
-  }
-  @media (max-width: 900px) { .bottom-row { grid-template-columns: 1fr; } }
-
-  /* ── 구별 순위 테이블 ── */
-  .gu-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-  }
-  .gu-table th {
-    color: var(--muted);
-    font-weight: 500;
-    text-align: left;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-  }
-  .gu-table td {
-    padding: 9px 4px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-  }
-  .gu-table tr:last-child td { border-bottom: none; }
-  .rank-bar {
-    height: 4px;
-    background: var(--blue-dim);
-    border-radius: 2px;
-    margin-top: 4px;
-  }
-  .rank-bar-fill {
-    height: 100%;
-    background: var(--blue);
-    border-radius: 2px;
-    transition: width .4s;
-  }
-
-  /* ── 로딩 / 에러 ── */
-  #loading {
-    text-align: center;
-    padding: 80px 40px;
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-  #error-msg {
-    display: none;
-    margin: 24px 40px;
-    padding: 14px 20px;
-    background: #2a1515;
-    border: 1px solid #7f2020;
-    border-radius: 10px;
-    color: #f87171;
-    font-size: 0.85rem;
-  }
+  #loading { text-align: center; padding: 80px; color: var(--muted); font-size: 0.9rem; }
 </style>
 </head>
 <body>
@@ -234,58 +135,101 @@
   <div id="updated-badge">로딩 중...</div>
 </header>
 
-<div class="filter-bar">
-  <div class="tab-group">
-    <button class="tab-btn active" data-type="trade">매매</button>
-    <button class="tab-btn" data-type="rent">전월세</button>
-  </div>
-  <select id="gu-select">
-    <option value="all">전체 (서울)</option>
-  </select>
-  <select id="size-select">
-    <option value="all">전용면적 전체</option>
-    <option value="60">~60㎡ 이하</option>
-    <option value="85">60~85㎡</option>
-    <option value="135">85~135㎡</option>
-    <option value="999">135㎡ 초과</option>
-  </select>
+<!-- 탭 네비게이션 -->
+<div class="nav-tabs">
+  <button class="nav-tab active" data-page="overview">📊 시장 개요</button>
+  <button class="nav-tab" data-page="jeonse">📈 전세가율</button>
+  <button class="nav-tab" data-page="budget">💰 예산 필터</button>
 </div>
 
 <div id="loading">📡 데이터 불러오는 중...</div>
-<div id="error-msg">⚠️ 데이터를 불러오지 못했습니다. summary.json 파일이 docs/data/ 폴더에 있는지 확인해주세요.</div>
 
 <div id="main-content" style="display:none">
-  <div class="kpi-row" id="kpi-row"></div>
 
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3 id="timeseries-label">월별 평균 매매가 추이</h3>
-      <canvas id="timeseriesChart" height="240"></canvas>
+  <!-- ── 페이지 1: 시장 개요 ── -->
+  <div class="page active" id="page-overview">
+    <div class="filter-bar">
+      <div class="tab-group">
+        <button class="tab-btn active" data-type="trade">매매</button>
+        <button class="tab-btn" data-type="rent">전월세</button>
+      </div>
+      <select id="gu-select"><option value="all">전체 (서울)</option></select>
     </div>
-    <div class="chart-card">
-      <h3>거래 유형 분포</h3>
-      <canvas id="distChart" height="240"></canvas>
+    <div class="kpi-row" id="kpi-row"></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3 id="timeseries-label">월별 평균 매매가 추이</h3>
+        <canvas id="timeseriesChart" height="240"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>거래 유형 분포</h3>
+        <canvas id="distChart" height="240"></canvas>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <div class="chart-card">
+        <h3>자치구별 평균가 순위</h3>
+        <table class="data-table" id="gu-table"></table>
+      </div>
+      <div class="chart-card">
+        <h3>월별 거래량 추이</h3>
+        <canvas id="volumeChart" height="260"></canvas>
+      </div>
     </div>
   </div>
 
-  <div class="bottom-row">
-    <div class="chart-card">
-      <h3>자치구별 평균가 순위</h3>
-      <table class="gu-table" id="gu-table"></table>
+  <!-- ── 페이지 2: 전세가율 ── -->
+  <div class="page" id="page-jeonse">
+    <div style="padding: 20px 40px 0">
+      <div style="background:rgba(59,124,244,.08);border:1px solid rgba(59,124,244,.2);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.83rem;color:#93c5fd;line-height:1.6">
+        💡 <strong>전세가율이란?</strong> 매매가 대비 전세가 비율이에요.<br>
+        70% 이상이면 전세로 살 바엔 사는 게 낫다는 신호로 해석할 수 있어요. 단, 입지·금리·개인 상황을 함께 고려해야 해요.
+      </div>
     </div>
-    <div class="chart-card">
-      <h3>월별 거래량 추이</h3>
-      <canvas id="volumeChart" height="260"></canvas>
+    <!-- 전세가율 KPI -->
+    <div class="kpi-row" id="jeonse-kpi"></div>
+    <!-- 전세가율 테이블 -->
+    <div style="padding: 0 40px 40px">
+      <div class="chart-card">
+        <h3>자치구별 전세가율 현황</h3>
+        <table class="data-table" id="jeonse-table"></table>
+      </div>
     </div>
   </div>
+
+  <!-- ── 페이지 3: 예산 필터 ── -->
+  <div class="page" id="page-budget">
+    <div class="budget-section">
+      <div class="budget-card">
+        <h3>💰 내 예산으로 살 수 있는 곳</h3>
+        <div class="budget-inputs">
+          <label>최소 예산</label>
+          <input class="budget-input" id="budget-min" type="number" placeholder="예) 30000" step="1000"/>
+          <label>만원</label>
+          <label style="margin-left:8px">최대 예산</label>
+          <input class="budget-input" id="budget-max" type="number" placeholder="예) 80000" step="1000"/>
+          <label>만원</label>
+          <select id="budget-size" style="margin-left:8px">
+            <option value="all">면적 전체</option>
+            <option value="60">~60㎡</option>
+            <option value="85">60~85㎡</option>
+            <option value="135">85~135㎡</option>
+            <option value="999">135㎡~</option>
+          </select>
+          <button class="budget-btn" onclick="runBudgetFilter()">🔍 검색</button>
+        </div>
+        <div id="budget-results" class="budget-results">
+          <div class="budget-empty">위에서 예산을 입력하고 검색해보세요!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-// ────────────────────────────────────────────────────────────
-//  상태
-// ────────────────────────────────────────────────────────────
 let summary = null;
-let currentType = "trade";   // "trade" | "rent"
+let currentType = "trade";
 let charts = {};
 
 const GU_LIST = [
@@ -294,238 +238,242 @@ const GU_LIST = [
   "구로구","금천구","영등포구","동작구","관악구","서초구","강남구","송파구","강동구"
 ];
 
-// ────────────────────────────────────────────────────────────
-//  데이터 로드
-// ────────────────────────────────────────────────────────────
+// ── 데이터 로드 ──────────────────────────────────────────
 async function loadData() {
   try {
     const res = await fetch("data/summary.json");
-    if (!res.ok) throw new Error("summary.json not found");
+    if (!res.ok) throw new Error();
     summary = await res.json();
-
     document.getElementById("loading").style.display = "none";
     document.getElementById("main-content").style.display = "block";
     document.getElementById("updated-badge").textContent = `최종 업데이트: ${summary.updated}`;
-
-    // 구 셀렉트 채우기
     const sel = document.getElementById("gu-select");
     GU_LIST.forEach(gu => {
-      const opt = document.createElement("option");
-      opt.value = gu; opt.textContent = gu;
-      sel.appendChild(opt);
+      const o = document.createElement("option"); o.value = gu; o.textContent = gu; sel.appendChild(o);
     });
-
-    renderAll();
-  } catch (e) {
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("error-msg").style.display = "block";
-    console.error(e);
+    renderOverview();
+    renderJeonse();
+  } catch {
+    document.getElementById("loading").textContent = "⚠️ 데이터를 불러오지 못했습니다.";
   }
 }
 
-// ────────────────────────────────────────────────────────────
-//  렌더링
-// ────────────────────────────────────────────────────────────
-function renderAll() {
-  renderKPI();
-  renderTimeseries();
-  renderDist();
-  renderGuTable();
-  renderVolume();
-}
-
-function fmtWon(v) {
-  if (!v || isNaN(v)) return "–";
-  if (v >= 10000) return (v / 10000).toFixed(1) + "억";
-  return Math.round(v / 1000) + "천만";
-}
-
-function renderKPI() {
-  const data = summary[currentType];
-  if (!data || data.length === 0) return;
-  const last  = data[data.length - 1];
-  const prev  = data[data.length - 2] || null;
-
-  let html = "";
-  if (currentType === "trade") {
-    const chg = prev ? ((last.전체평균 - prev.전체평균) / prev.전체평균 * 100) : null;
-    const dir  = chg > 0 ? "up" : "down";
-    html += kpiCard("최근 월 평균 매매가", fmtWon(last.전체평균), chg ? `${chg > 0 ? "▲" : "▼"} ${Math.abs(chg).toFixed(1)}% 전월 대비` : "", dir);
-    html += kpiCard("중위 거래가", fmtWon(last.전체중위), "", "");
-    html += kpiCard("총 거래 건수", last.거래수?.toLocaleString() + "건", `${last.ym.slice(0,4)}년 ${last.ym.slice(4)}월`, "");
-    html += kpiCard("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)} ~ ${last.ym.slice(0,4)}.${last.ym.slice(4)}`, `${data.length}개월`, "");
-  } else {
-    html += kpiCard("최근 월 평균 보증금", fmtWon(last.평균보증금), "", "");
-    html += kpiCard("평균 월세", fmtWon(last.평균월세) + "/월", "", "");
-    html += kpiCard("총 거래 건수", last.거래수?.toLocaleString() + "건", `${last.ym.slice(0,4)}년 ${last.ym.slice(4)}월`, "");
-    html += kpiCard("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)} ~ ${last.ym.slice(0,4)}.${last.ym.slice(4)}`, `${data.length}개월`, "");
-  }
-  document.getElementById("kpi-row").innerHTML = html;
-}
-
-function kpiCard(label, value, sub, dir) {
-  return `<div class="kpi-card">
-    <div class="kpi-label">${label}</div>
-    <div class="kpi-value">${value}</div>
-    ${sub ? `<div class="kpi-change ${dir}">${sub}</div>` : ""}
-  </div>`;
-}
-
-function renderTimeseries() {
-  const data = summary[currentType];
-  if (!data) return;
-  const labels = data.map(d => `${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
-  const values = currentType === "trade"
-    ? data.map(d => d.전체평균 ? d.전체평균 / 10000 : 0)
-    : data.map(d => d.평균보증금 ? d.평균보증금 / 10000 : 0);
-  const label  = currentType === "trade" ? "평균 매매가 (억원)" : "평균 보증금 (억원)";
-
-  document.getElementById("timeseries-label").textContent =
-    currentType === "trade" ? "월별 평균 매매가 추이" : "월별 평균 보증금 추이";
-
-  destroyChart("timeseriesChart");
-  charts.timeseries = new Chart(document.getElementById("timeseriesChart"), {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label,
-        data: values,
-        borderColor: "#3b7cf4",
-        backgroundColor: "rgba(59,124,244,0.12)",
-        tension: 0.4,
-        fill: true,
-        pointRadius: 5,
-        pointBackgroundColor: "#3b7cf4",
-      }]
-    },
-    options: chartOptions("억원")
+// ── 페이지 네비게이션 ──────────────────────────────────
+document.querySelectorAll(".nav-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("page-" + btn.dataset.page).classList.add("active");
   });
-}
+});
 
-function renderDist() {
-  const data = summary[currentType];
-  if (!data || data.length === 0) return;
-  const last = data[data.length - 1];
-
-  // 거래량 기반 간단 분포 (구별 거래수 파이)
-  const guData = (last.구별 || []).slice(0, 8);
-  if (!guData.length) return;
-
-  destroyChart("distChart");
-  charts.dist = new Chart(document.getElementById("distChart"), {
-    type: "doughnut",
-    data: {
-      labels: guData.map(d => d.구),
-      datasets: [{
-        data: guData.map(d => d.거래수 || 0),
-        backgroundColor: [
-          "#3b7cf4","#a855f7","#14b8a6","#f59e0b",
-          "#f87171","#34d399","#60a5fa","#fb923c"
-        ],
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: "#94a3b8", font: { size: 11 } }, position: "right" },
-        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}건` } }
-      }
-    }
-  });
-}
-
-function renderGuTable() {
-  const data = summary[currentType];
-  if (!data || data.length === 0) return;
-  const last = data[data.length - 1];
-  const guData = (last.구별 || [])
-    .filter(d => d.평균가)
-    .sort((a, b) => b.평균가 - a.평균가);
-  if (!guData.length) return;
-
-  const max = guData[0].평균가;
-  let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>거래수</th></tr>`;
-  guData.forEach((d, i) => {
-    const pct = Math.round((d.평균가 / max) * 100);
-    html += `<tr>
-      <td style="color:var(--muted);width:32px">${i + 1}</td>
-      <td>${d.구}</td>
-      <td>
-        ${fmtWon(d.평균가)}
-        <div class="rank-bar"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
-      </td>
-      <td style="color:var(--muted)">${d.거래수}건</td>
-    </tr>`;
-  });
-  document.getElementById("gu-table").innerHTML = html;
-}
-
-function renderVolume() {
-  const data = summary[currentType];
-  if (!data) return;
-  const labels = data.map(d => `${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
-  const values = data.map(d => d.거래수 || 0);
-
-  destroyChart("volumeChart");
-  charts.volume = new Chart(document.getElementById("volumeChart"), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "거래 건수",
-        data: values,
-        backgroundColor: "rgba(245,158,11,0.6)",
-        borderColor: "#f59e0b",
-        borderWidth: 1,
-        borderRadius: 4,
-      }]
-    },
-    options: chartOptions("건")
-  });
-}
-
-function chartOptions(unit) {
-  return {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: "#1a2340",
-        borderColor: "#1e2d4a",
-        borderWidth: 1,
-        titleColor: "#e2e8f0",
-        bodyColor: "#94a3b8",
-        callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${unit}` }
-      }
-    },
-    scales: {
-      x: { ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "#1e2d4a" } },
-      y: { ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "#1e2d4a" } }
-    }
-  };
-}
-
-function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-}
-
-// ────────────────────────────────────────────────────────────
-//  이벤트
-// ────────────────────────────────────────────────────────────
+// ── 매매/전월세 탭 ─────────────────────────────────────
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     currentType = btn.dataset.type;
-    renderAll();
+    renderOverview();
   });
 });
 
-// ────────────────────────────────────────────────────────────
-//  초기 실행
-// ────────────────────────────────────────────────────────────
+// ── 유틸 ───────────────────────────────────────────────
+function fmtWon(v) {
+  if (!v || isNaN(v)) return "–";
+  if (v >= 10000) return (v / 10000).toFixed(1) + "억";
+  return Math.round(v / 1000) + "천만";
+}
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function chartOpts(unit) {
+  return {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor:"#1a2340", borderColor:"#1e2d4a", borderWidth:1, titleColor:"#e2e8f0", bodyColor:"#94a3b8",
+        callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${unit}` } }
+    },
+    scales: {
+      x: { ticks:{color:"#64748b",font:{size:11}}, grid:{color:"#1e2d4a"} },
+      y: { ticks:{color:"#64748b",font:{size:11}}, grid:{color:"#1e2d4a"} }
+    }
+  };
+}
+
+// ── 시장 개요 렌더링 ───────────────────────────────────
+function renderOverview() {
+  renderKPI(); renderTimeseries(); renderDist(); renderGuTable(); renderVolume();
+}
+
+function renderKPI() {
+  const data = summary[currentType];
+  if (!data || !data.length) return;
+  const last = data[data.length - 1];
+  const prev = data[data.length - 2] || null;
+  let html = "";
+  if (currentType === "trade") {
+    const chg = prev ? ((last.전체평균 - prev.전체평균) / prev.전체평균 * 100) : null;
+    const dir = chg > 0 ? "up" : "down";
+    html += kpiCard("최근 월 평균 매매가", fmtWon(last.전체평균), chg ? `${chg>0?"▲":"▼"} ${Math.abs(chg).toFixed(1)}% 전월 대비` : "", dir);
+    html += kpiCard("중위 거래가", fmtWon(last.전체중위), "", "");
+    html += kpiCard("총 거래 건수", last.거래수?.toLocaleString()+"건", `${last.ym.slice(0,4)}년 ${last.ym.slice(4)}월`, "");
+    html += kpiCard("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)} ~ ${last.ym.slice(0,4)}.${last.ym.slice(4)}`, `${data.length}개월`, "");
+  } else {
+    html += kpiCard("평균 보증금", fmtWon(last.평균보증금), "", "");
+    html += kpiCard("평균 월세", fmtWon(last.평균월세)+"/월", "", "");
+    html += kpiCard("총 거래 건수", last.거래수?.toLocaleString()+"건", "", "");
+    html += kpiCard("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)} ~ ${last.ym.slice(0,4)}.${last.ym.slice(4)}`, "", "");
+  }
+  document.getElementById("kpi-row").innerHTML = html;
+}
+function kpiCard(label, value, sub, dir) {
+  return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-change ${dir}">${sub}</div>`:""}</div>`;
+}
+
+function renderTimeseries() {
+  const data = summary[currentType]; if (!data) return;
+  const labels = data.map(d => `${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
+  const values = currentType==="trade" ? data.map(d=>d.전체평균/10000) : data.map(d=>d.평균보증금/10000);
+  const label  = currentType==="trade" ? "평균 매매가 (억원)" : "평균 보증금 (억원)";
+  document.getElementById("timeseries-label").textContent = currentType==="trade" ? "월별 평균 매매가 추이" : "월별 평균 보증금 추이";
+  destroyChart("timeseriesChart");
+  charts.timeseries = new Chart(document.getElementById("timeseriesChart"), {
+    type:"line", data:{ labels, datasets:[{ label, data:values, borderColor:"#3b7cf4", backgroundColor:"rgba(59,124,244,.12)", tension:.4, fill:true, pointRadius:5, pointBackgroundColor:"#3b7cf4" }] },
+    options: chartOpts("억원")
+  });
+}
+
+function renderDist() {
+  const data = summary[currentType]; if (!data || !data.length) return;
+  const last = data[data.length-1];
+  const guData = (last.구별||[]).slice(0,8); if (!guData.length) return;
+  destroyChart("distChart");
+  charts.dist = new Chart(document.getElementById("distChart"), {
+    type:"doughnut",
+    data:{ labels:guData.map(d=>d.구), datasets:[{ data:guData.map(d=>d.거래수||0), backgroundColor:["#3b7cf4","#a855f7","#14b8a6","#f59e0b","#f87171","#34d399","#60a5fa","#fb923c"], borderWidth:0 }] },
+    options:{ responsive:true, plugins:{ legend:{labels:{color:"#94a3b8",font:{size:11}},position:"right"}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}건`}} } }
+  });
+}
+
+function renderGuTable() {
+  const data = summary[currentType]; if (!data || !data.length) return;
+  const last = data[data.length-1];
+  const guData = (last.구별||[]).filter(d=>d.평균가).sort((a,b)=>b.평균가-a.평균가);
+  if (!guData.length) return;
+  const max = guData[0].평균가;
+  let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>거래수</th></tr>`;
+  guData.forEach((d,i) => {
+    const pct = Math.round((d.평균가/max)*100);
+    html += `<tr><td style="color:var(--muted);width:32px">${i+1}</td><td>${d.구}</td><td>${fmtWon(d.평균가)}<div class="rate-bar"><div class="rate-bar-fill" style="width:${pct}%;background:var(--blue)"></div></div></td><td style="color:var(--muted)">${d.거래수}건</td></tr>`;
+  });
+  document.getElementById("gu-table").innerHTML = html;
+}
+
+function renderVolume() {
+  const data = summary[currentType]; if (!data) return;
+  const labels = data.map(d=>`${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
+  destroyChart("volumeChart");
+  charts.volume = new Chart(document.getElementById("volumeChart"), {
+    type:"bar",
+    data:{ labels, datasets:[{ label:"거래 건수", data:data.map(d=>d.거래수||0), backgroundColor:"rgba(245,158,11,.6)", borderColor:"#f59e0b", borderWidth:1, borderRadius:4 }] },
+    options: chartOpts("건")
+  });
+}
+
+// ── 전세가율 렌더링 ────────────────────────────────────
+function renderJeonse() {
+  const jData = summary.jeonse_rate;
+  if (!jData || !jData.length) return;
+
+  // KPI
+  const buyList  = jData.filter(d=>d.신호==="매수고려");
+  const avgRate  = (jData.reduce((s,d)=>s+d.전세가율,0)/jData.length).toFixed(1);
+  const topGu    = jData[0];
+  let kpi = "";
+  kpi += kpiCard("서울 평균 전세가율", avgRate+"%", "전체 구 평균", "");
+  kpi += kpiCard("매수 고려 구역", buyList.length+"개 구", "전세가율 70% 이상", "");
+  kpi += kpiCard("전세가율 1위", topGu.구, topGu.전세가율+"%", "");
+  kpi += kpiCard("기준 월", `${jData[0].ym.slice(0,4)}.${jData[0].ym.slice(4)}`, "최근 실거래 기준", "");
+  document.getElementById("jeonse-kpi").innerHTML = kpi;
+
+  // 테이블
+  let html = `<tr><th>순위</th><th>자치구</th><th>전세가율</th><th>평균매매가</th><th>평균전세가</th><th>신호</th></tr>`;
+  jData.forEach((d,i) => {
+    const pct = Math.min(d.전세가율, 100);
+    const color = d.신호==="매수고려" ? "var(--green)" : d.신호==="주의" ? "var(--yellow)" : "var(--muted)";
+    const badgeCls = d.신호==="매수고려" ? "badge-buy" : d.신호==="주의" ? "badge-warn" : "badge-wait";
+    html += `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-weight:600">${d.구}</td>
+      <td>
+        <span style="color:${color};font-weight:700">${d.전세가율}%</span>
+        <div class="rate-bar"><div class="rate-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      </td>
+      <td style="color:var(--muted)">${fmtWon(d.평균매매가)}</td>
+      <td style="color:var(--muted)">${fmtWon(d.평균전세가)}</td>
+      <td><span class="badge ${badgeCls}">${d.신호}</span></td>
+    </tr>`;
+  });
+  document.getElementById("jeonse-table").innerHTML = html;
+}
+
+// ── 예산 필터 ──────────────────────────────────────────
+function runBudgetFilter() {
+  const minBudget = parseFloat(document.getElementById("budget-min").value) || 0;
+  const maxBudget = parseFloat(document.getElementById("budget-max").value) || Infinity;
+  const sizeFilter = document.getElementById("budget-size").value;
+
+  const data = summary.trade;
+  if (!data || !data.length) return;
+  const last = data[data.length - 1];
+  const guData = last.구별 || [];
+
+  // 면적 필터 적용
+  let results = [];
+  if (sizeFilter === "all") {
+    // 구별 평균가로 필터
+    results = guData
+      .filter(d => d.평균가 >= minBudget && d.평균가 <= maxBudget)
+      .map(d => ({
+        구: d.구, 가격: d.평균가, 거래수: d.거래수, 면적: "전체", 구간: "평균가 기준"
+      }));
+  } else {
+    // 면적별 데이터로 필터
+    const sizeMap = { "60":"~60㎡", "85":"60~85㎡", "135":"85~135㎡", "999":"135㎡~" };
+    const sizeLabel = sizeMap[sizeFilter];
+    last.면적별?.forEach(s => {
+      if (s.구간 === sizeLabel && s.평균가 >= minBudget && s.평균가 <= maxBudget) {
+        // 모든 구에 해당 면적 평균가 보여주기
+        results.push({ 구: "서울 전체", 가격: s.평균가, 거래수: s.거래수, 면적: sizeLabel, 구간: "면적 평균가 기준" });
+      }
+    });
+    // 구별로도 체크
+    guData.forEach(d => {
+      if (d.평균가 >= minBudget && d.평균가 <= maxBudget) {
+        results.push({ 구: d.구, 가격: d.평균가, 거래수: d.거래수, 면적: sizeLabel, 구간: "구 평균가 기준" });
+      }
+    });
+  }
+
+  results.sort((a,b) => a.가격 - b.가격);
+
+  const container = document.getElementById("budget-results");
+  if (!results.length) {
+    container.innerHTML = `<div class="budget-empty">해당 예산 범위의 거래가 없어요.<br>범위를 조정해보세요!</div>`;
+    return;
+  }
+
+  container.innerHTML = results.slice(0, 12).map(r => `
+    <div class="budget-result-card">
+      <div class="gu-name">📍 ${r.구}</div>
+      <div class="price">평균 ${fmtWon(r.가격)}</div>
+      <div class="detail">${r.거래수}건 거래 · ${r.면적}</div>
+    </div>
+  `).join("");
+}
+
 loadData();
 </script>
 </body>
