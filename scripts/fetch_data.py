@@ -1,7 +1,6 @@
 """
 서울 아파트 실거래가 & 전월세 데이터 수집 스크립트
 국토교통부 실거래가 API 사용
-매일 GitHub Actions에서 자동 실행
 """
 
 import os
@@ -13,11 +12,9 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import json
 
-# ── 환경변수에서 API 키 로드 ──────────────────────────────────
 TRADE_API_KEY = os.environ["MOLIT_TRADE_API_KEY"]
 RENT_API_KEY  = os.environ["MOLIT_RENT_API_KEY"]
 
-# ── 서울 25개 자치구 법정동 코드 ───────────────────────────────
 SEOUL_GU_CODES = {
     "종로구": "11110", "중구":   "11140", "용산구": "11170",
     "성동구": "11200", "광진구": "11215", "동대문구": "11230",
@@ -34,7 +31,7 @@ BASE_TRADE_URL = "http://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSD
 BASE_RENT_URL  = "http://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent"
 
 
-def get_ym_list(months_back: int = 3):
+def get_ym_list(months_back=3):
     result = []
     today = datetime.today()
     for i in range(months_back):
@@ -60,19 +57,19 @@ def fetch_trade(gu_name, gu_code, ym):
             def g(tag):
                 el = item.find(tag)
                 return el.text.strip() if el is not None and el.text else None
-            amt = g("거래금액")
+            amt = g("dealAmount")
             records.append({
                 "구":        gu_name,
-                "법정동":    g("법정동"),
-                "아파트명":  g("아파트"),
-                "전용면적":  g("전용면적"),
-                "층":        g("층"),
-                "건축년도":  g("건축년도"),
+                "법정동":    g("umdNm"),
+                "아파트명":  g("aptNm"),
+                "전용면적":  g("excluUseAr"),
+                "층":        g("floor"),
+                "건축년도":  g("buildYear"),
                 "거래금액":  amt.replace(",", "") if amt else None,
-                "년":        g("년"),
-                "월":        g("월"),
-                "일":        g("일"),
-                "거래유형":  g("거래유형"),
+                "년":        g("dealYear"),
+                "월":        g("dealMonth"),
+                "일":        g("dealDay"),
+                "거래유형":  g("dealingGbn"),
             })
         print(f"  [매매] {gu_name} {ym}: {len(records)}건")
         return records
@@ -98,20 +95,20 @@ def fetch_rent(gu_name, gu_code, ym):
             def g(tag):
                 el = item.find(tag)
                 return el.text.strip() if el is not None and el.text else None
-            deposit = g("보증금액")
-            monthly = g("월세금액")
+            deposit = g("deposit")
+            monthly = g("monthlyRent")
             records.append({
                 "구":        gu_name,
-                "법정동":    g("법정동"),
-                "아파트명":  g("아파트"),
-                "전용면적":  g("전용면적"),
-                "층":        g("층"),
-                "건축년도":  g("건축년도"),
+                "법정동":    g("umdNm"),
+                "아파트명":  g("aptNm"),
+                "전용면적":  g("excluUseAr"),
+                "층":        g("floor"),
+                "건축년도":  g("buildYear"),
                 "보증금":    deposit.replace(",", "") if deposit else None,
                 "월세":      monthly.replace(",", "") if monthly else None,
-                "년":        g("년"),
-                "월":        g("월"),
-                "일":        g("일"),
+                "년":        g("dealYear"),
+                "월":        g("dealMonth"),
+                "일":        g("dealDay"),
             })
         print(f"  [전월세] {gu_name} {ym}: {len(records)}건")
         return records
@@ -122,7 +119,7 @@ def fetch_rent(gu_name, gu_code, ym):
 
 def save_csv(records, path):
     if not records:
-        print(f"  저장 건너뜀 (데이터 없음): {path}")
+        print(f"  저장 건너뜀: {path}")
         return
     df = pd.DataFrame(records)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -131,7 +128,6 @@ def save_csv(records, path):
 
 
 def clean_nan(obj):
-    """NaN/Infinity를 0으로 변환 (JSON 직렬화 오류 방지)"""
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
         return 0
     if isinstance(obj, dict):
@@ -177,7 +173,6 @@ def build_summary(trade_dir, rent_dir, out_path):
             "거래수": len(df),
         })
 
-    # NaN 제거 후 저장
     summary = clean_nan(summary)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as fp:
