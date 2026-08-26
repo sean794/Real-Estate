@@ -97,6 +97,11 @@ def save_csv(records, path):
     df.to_csv(path, index=False, encoding="utf-8-sig")
     print(f"  저장: {path} ({len(df)}행)")
 
+    # GitHub Pages에서 접근 가능하도록 docs/data/ 에도 복사
+    docs_path = Path("docs") / path
+    docs_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(docs_path, index=False, encoding="utf-8-sig")
+
 def clean_nan(obj):
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)): return 0
     if isinstance(obj, dict):  return {k: clean_nan(v) for k, v in obj.items()}
