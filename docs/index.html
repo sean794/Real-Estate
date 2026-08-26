@@ -8,8 +8,7 @@
 <style>
   :root {
     --bg:#0b0f1a; --surface:#131929; --surface2:#1a2340; --border:#1e2d4a;
-    --blue:#3b7cf4; --blue-dim:rgba(59,124,244,.12);
-    --amber:#f59e0b; --teal:#14b8a6; --green:#22c55e;
+    --blue:#3b7cf4; --amber:#f59e0b; --teal:#14b8a6; --green:#22c55e;
     --yellow:#eab308; --red:#f87171; --purple:#a855f7;
     --text:#e2e8f0; --muted:#64748b;
   }
@@ -30,6 +29,8 @@
   .tab-btn.active{background:var(--blue);color:#fff;font-weight:600;}
   select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:.8rem;cursor:pointer;outline:none;}
   select:focus{border-color:var(--blue);}
+  input[type="text"]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:.8rem;outline:none;width:180px;}
+  input[type="text"]:focus{border-color:var(--blue);}
 
   .page{display:none;} .page.active{display:block;}
 
@@ -44,15 +45,21 @@
   .section-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;padding-top:4px;}
   .chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:13px;}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
-  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
   .card-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
 
+  /* 거래 내역 테이블 */
   .data-table{width:100%;border-collapse:collapse;font-size:.8rem;}
-  .data-table th{color:var(--muted);font-weight:500;text-align:left;padding:7px 4px;border-bottom:1px solid var(--border);font-size:.68rem;text-transform:uppercase;}
-  .data-table td{padding:8px 4px;border-bottom:1px solid var(--border);color:var(--text);}
+  .data-table th{color:var(--muted);font-weight:500;text-align:left;padding:9px 8px;border-bottom:1px solid var(--border);font-size:.68rem;text-transform:uppercase;position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none;white-space:nowrap;}
+  .data-table th:hover{color:var(--text);}
+  .data-table th.sort-asc::after{content:" ↑";}
+  .data-table th.sort-desc::after{content:" ↓";}
+  .data-table td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;}
   .data-table tr:last-child td{border-bottom:none;}
   .data-table tr:hover td{background:var(--surface2);}
+  .data-table td.price{color:var(--amber);font-weight:600;}
+
+  .table-wrap{overflow-x:auto;overflow-y:auto;max-height:600px;border-radius:8px;border:1px solid var(--border);}
 
   .bar{height:3px;background:var(--border);border-radius:2px;margin-top:3px;}
   .bar-fill{height:100%;border-radius:2px;}
@@ -62,10 +69,21 @@
   .badge-warn{background:rgba(234,179,8,.15);color:var(--yellow);}
   .badge-wait{background:rgba(100,116,139,.15);color:var(--muted);}
 
-  /* 탭 서브 필터 */
   .subtab-group{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
   .subtab{padding:4px 14px;border:1px solid var(--border);border-radius:99px;background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .15s;}
   .subtab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  /* 구 선택 그리드 */
+  .gu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:20px;}
+  .gu-btn{padding:10px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;cursor:pointer;text-align:center;transition:all .15s;}
+  .gu-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .gu-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+
+  /* 통계 요약 바 */
+  .stat-bar{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+  .stat-item{font-size:.8rem;}
+  .stat-item span{color:var(--muted);margin-right:4px;}
+  .stat-item strong{color:var(--amber);}
 
   /* 예산 필터 */
   .budget-inputs{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
@@ -80,9 +98,16 @@
   .empty{text-align:center;padding:36px;color:var(--muted);font-size:.85rem;}
 
   .info-box{background:rgba(59,124,244,.07);border:1px solid rgba(59,124,244,.18);border-radius:10px;padding:12px 16px;font-size:.8rem;color:#93c5fd;line-height:1.6;margin-bottom:16px;}
+  .loading-spinner{text-align:center;padding:40px;color:var(--muted);font-size:.88rem;}
+
+  /* 페이지네이션 */
+  .pagination{display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+  .page-btn{padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:.78rem;cursor:pointer;}
+  .page-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .page-btn:hover:not(.active){border-color:var(--blue);color:var(--blue);}
 
   @media(max-width:900px){
-    .chart-grid,.two-col,.three-col{grid-template-columns:1fr;}
+    .chart-grid,.two-col{grid-template-columns:1fr;}
     .filter-bar,.kpi-row,.section,.nav-tabs,header{padding-left:16px;padding-right:16px;}
   }
   #loading{text-align:center;padding:80px;color:var(--muted);font-size:.9rem;}
@@ -97,6 +122,7 @@
 
 <div class="nav-tabs">
   <button class="nav-tab active" data-page="overview">📊 시장 개요</button>
+  <button class="nav-tab" data-page="transactions">🏠 거래 내역</button>
   <button class="nav-tab" data-page="detail">🔍 구별 상세</button>
   <button class="nav-tab" data-page="jeonse">📈 전세가율</button>
   <button class="nav-tab" data-page="budget">💰 예산 필터</button>
@@ -116,13 +142,51 @@
     <div class="kpi-row" id="kpi-overview"></div>
     <div class="section">
       <div class="chart-grid" style="margin-bottom:13px">
-        <div class="card"><div class="card-title" id="ts-label">월별 평균 매매가 추이 (이상치 제거)</div><canvas id="tsChart" height="230"></canvas></div>
+        <div class="card"><div class="card-title" id="ts-label">월별 평균 매매가 추이</div><canvas id="tsChart" height="230"></canvas></div>
         <div class="card"><div class="card-title">월별 거래량</div><canvas id="volChart" height="230"></canvas></div>
       </div>
     </div>
   </div>
 
-  <!-- ── 2. 구별 상세 ── -->
+  <!-- ── 2. 거래 내역 (NEW) ── -->
+  <div class="page" id="page-transactions">
+    <div class="filter-bar">
+      <div class="tab-group">
+        <button class="tab-btn active" data-txtype="trade">매매</button>
+        <button class="tab-btn" data-txtype="rent">전월세</button>
+      </div>
+      <select id="tx-month-select"></select>
+      <input type="text" id="tx-search" placeholder="🔍 아파트명 검색"/>
+      <select id="tx-size-filter">
+        <option value="all">면적 전체</option>
+        <option value="60">~60㎡</option>
+        <option value="85">60~85㎡</option>
+        <option value="135">85~135㎡</option>
+        <option value="999">135㎡~</option>
+      </select>
+    </div>
+
+    <div style="padding:16px 40px 0">
+      <!-- 구 선택 -->
+      <div class="section-title">자치구 선택</div>
+      <div class="gu-grid" id="gu-grid"></div>
+      <!-- 통계 요약 -->
+      <div class="stat-bar" id="tx-stat-bar" style="display:none"></div>
+      <!-- 로딩 -->
+      <div class="loading-spinner" id="tx-loading" style="display:none">⏳ 데이터 불러오는 중...</div>
+      <!-- 테이블 -->
+      <div class="table-wrap" id="tx-table-wrap" style="display:none">
+        <table class="data-table" id="tx-table">
+          <thead id="tx-thead"></thead>
+          <tbody id="tx-tbody"></tbody>
+        </table>
+      </div>
+      <!-- 페이지네이션 -->
+      <div class="pagination" id="tx-pagination"></div>
+    </div>
+  </div>
+
+  <!-- ── 3. 구별 상세 ── -->
   <div class="page" id="page-detail">
     <div class="filter-bar">
       <div class="tab-group">
@@ -133,15 +197,11 @@
     </div>
     <div class="kpi-row" id="kpi-detail"></div>
     <div class="section">
-      <div class="info-box">💡 이상치(IQR 기준 상하위 25%) 제거 후 중위값 기준이에요. 실제 거래 가능 금액대를 더 정확하게 반영해요.</div>
-
-      <!-- 전체 구별 순위 -->
-      <div class="section-title">전체 구별 순위 (이상치 제거)</div>
+      <div class="info-box">💡 이상치(IQR 기준) 제거 후 중위값 기준이에요.</div>
+      <div class="section-title">전체 구별 순위</div>
       <div class="card" style="margin-bottom:13px">
         <table class="data-table" id="gu-rank-table"></table>
       </div>
-
-      <!-- 면적대별 -->
       <div class="section-title">면적대별 구별 순위</div>
       <div class="subtab-group" id="size-tabs">
         <button class="subtab active" data-size="소형 (~60㎡)">소형 (~60㎡)</button>
@@ -151,34 +211,24 @@
       <div class="card" style="margin-bottom:13px">
         <table class="data-table" id="size-table"></table>
       </div>
-
-      <!-- 국민평형 -->
-      <div class="section-title">국민평형 집중 (59㎡ / 84㎡)</div>
+      <div class="section-title">국민평형 (59㎡ / 84㎡)</div>
       <div class="two-col">
-        <div class="card">
-          <div class="card-title">59㎡ 기준</div>
-          <table class="data-table" id="popular59-table"></table>
-        </div>
-        <div class="card">
-          <div class="card-title">84㎡ 기준</div>
-          <table class="data-table" id="popular84-table"></table>
-        </div>
+        <div class="card"><div class="card-title">59㎡ 기준</div><table class="data-table" id="popular59-table"></table></div>
+        <div class="card"><div class="card-title">84㎡ 기준</div><table class="data-table" id="popular84-table"></table></div>
       </div>
     </div>
   </div>
 
-  <!-- ── 3. 전세가율 ── -->
+  <!-- ── 4. 전세가율 ── -->
   <div class="page" id="page-jeonse">
     <div class="kpi-row" id="kpi-jeonse"></div>
     <div class="section">
-      <div class="info-box">💡 <strong>전세가율</strong> = 전세가 ÷ 매매가 × 100. 70% 이상이면 전세 대신 매수를 고려해볼 만해요. 단, 금리·입지·개인 자금 상황을 함께 봐야 해요.</div>
-      <div class="card">
-        <table class="data-table" id="jeonse-table"></table>
-      </div>
+      <div class="info-box">💡 <strong>전세가율</strong> = 전세가 ÷ 매매가 × 100. 70% 이상이면 매수 고려 신호예요.</div>
+      <div class="card"><table class="data-table" id="jeonse-table"></table></div>
     </div>
   </div>
 
-  <!-- ── 4. 예산 필터 ── -->
+  <!-- ── 5. 예산 필터 ── -->
   <div class="page" id="page-budget">
     <div class="section" style="padding-top:20px">
       <div class="card">
@@ -190,8 +240,8 @@
           <input class="budget-input" id="b-max" type="number" placeholder="최대 (만원)" step="1000"/>
           <select id="b-size">
             <option value="all">면적 전체</option>
-            <option value="59">59㎡</option>
-            <option value="84">84㎡</option>
+            <option value="59㎡">59㎡</option>
+            <option value="84㎡">84㎡</option>
             <option value="소형 (~60㎡)">소형 (~60㎡)</option>
             <option value="중형 (60~85㎡)">중형 (60~85㎡)</option>
             <option value="대형 (85㎡~)">대형 (85㎡~)</option>
@@ -206,12 +256,29 @@
 </div>
 
 <script>
-let S = null; // summary
+let S = null;
 let charts = {};
 let currentType  = "trade";
 let currentType2 = "trade";
+let currentTxType = "trade";
 let currentSize  = "소형 (~60㎡)";
 let currentMonth = null;
+
+// 거래 내역 상태
+let txData = [];         // 원본 데이터
+let txFiltered = [];     // 필터 적용 후
+let txCurrentPage = 1;
+let txPageSize = 50;
+let txSortCol = null;
+let txSortDir = 1;
+let txSelectedGu = null;
+let txCurrentMonth = null;
+
+const GU_LIST = [
+  "종로구","중구","용산구","성동구","광진구","동대문구","중랑구","성북구",
+  "강북구","도봉구","노원구","은평구","서대문구","마포구","양천구","강서구",
+  "구로구","금천구","영등포구","동작구","관악구","서초구","강남구","송파구","강동구"
+];
 
 // ── 로드 ─────────────────────────────────────────────
 async function load() {
@@ -223,15 +290,28 @@ async function load() {
     document.getElementById("main-content").style.display = "block";
     document.getElementById("updated-badge").textContent = `업데이트: ${S.updated}`;
 
-    // 월 선택 옵션
-    const sel = document.getElementById("month-select");
-    S.trade.forEach(d => {
-      const o = document.createElement("option");
-      o.value = d.ym; o.textContent = `${d.ym.slice(0,4)}년 ${d.ym.slice(4)}월`;
-      sel.appendChild(o);
+    // 월 셀렉트 세팅
+    const monthSels = ["month-select", "tx-month-select"];
+    monthSels.forEach(id => {
+      const sel = document.getElementById(id);
+      S.trade.forEach(d => {
+        const o = document.createElement("option");
+        o.value = d.ym; o.textContent = `${d.ym.slice(0,4)}년 ${d.ym.slice(4)}월`;
+        sel.appendChild(o);
+      });
+      sel.value = S.trade[S.trade.length-1].ym;
     });
-    sel.value = S.trade[S.trade.length-1].ym;
-    currentMonth = sel.value;
+    currentMonth = S.trade[S.trade.length-1].ym;
+    txCurrentMonth = S.trade[S.trade.length-1].ym;
+
+    // 구 버튼 생성
+    const guGrid = document.getElementById("gu-grid");
+    GU_LIST.forEach(gu => {
+      const btn = document.createElement("button");
+      btn.className = "gu-btn"; btn.textContent = gu; btn.dataset.gu = gu;
+      btn.addEventListener("click", () => selectGu(gu, btn));
+      guGrid.appendChild(btn);
+    });
 
     renderOverview(); renderDetail(); renderJeonse();
   } catch(e) {
@@ -253,19 +333,22 @@ document.querySelectorAll(".nav-tab").forEach(btn => {
 document.querySelectorAll("[data-type]").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("[data-type]").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentType = btn.dataset.type;
-    renderOverview();
+    btn.classList.add("active"); currentType = btn.dataset.type; renderOverview();
   });
 });
-
 // 매매/전세 탭 (상세)
 document.querySelectorAll("[data-type2]").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("[data-type2]").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentType2 = btn.dataset.type2;
-    renderDetail();
+    btn.classList.add("active"); currentType2 = btn.dataset.type2; renderDetail();
+  });
+});
+// 매매/전월세 탭 (거래내역)
+document.querySelectorAll("[data-txtype]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-txtype]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); currentTxType = btn.dataset.txtype;
+    if (txSelectedGu) loadTxData(txSelectedGu);
   });
 });
 
@@ -273,15 +356,22 @@ document.querySelectorAll("[data-type2]").forEach(btn => {
 document.querySelectorAll("[data-size]").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("[data-size]").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentSize = btn.dataset.size;
-    renderSizeTable();
+    btn.classList.add("active"); currentSize = btn.dataset.size; renderSizeTable();
   });
 });
 
-// 월 선택
 document.getElementById("month-select")?.addEventListener("change", e => {
   currentMonth = e.target.value; renderDetail();
+});
+document.getElementById("tx-month-select")?.addEventListener("change", e => {
+  txCurrentMonth = e.target.value;
+  if (txSelectedGu) loadTxData(txSelectedGu);
+});
+document.getElementById("tx-search")?.addEventListener("input", () => {
+  txCurrentPage = 1; applyTxFilter();
+});
+document.getElementById("tx-size-filter")?.addEventListener("change", () => {
+  txCurrentPage = 1; applyTxFilter();
 });
 
 // ── 유틸 ─────────────────────────────────────────────
@@ -298,13 +388,14 @@ function cOpts(unit) {
     scales:{x:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e2d4a"}},y:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e2d4a"}}}
   };
 }
+function kpi(label, value, sub, dir) {
+  return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub ${dir}">${sub}</div>`:""}</div>`;
+}
 
 // ── 시장 개요 ─────────────────────────────────────────
 function renderOverview() {
   const data = S[currentType]; if(!data||!data.length) return;
-  const last = data[data.length-1];
-  const prev = data[data.length-2]||null;
-
+  const last = data[data.length-1]; const prev = data[data.length-2]||null;
   let html = "";
   if (currentType==="trade") {
     const chg = prev ? ((last.전체평균-prev.전체평균)/prev.전체평균*100) : null;
@@ -313,39 +404,194 @@ function renderOverview() {
     html += kpi("총 거래", last.거래수?.toLocaleString()+"건", "", "");
     html += kpi("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)}~${last.ym.slice(0,4)}.${last.ym.slice(4)}`, `${data.length}개월`, "");
   } else {
-    html += kpi("평균 보증금 (이상치 제거)", fmtWon(last.평균보증금), "", "");
+    html += kpi("평균 보증금", fmtWon(last.평균보증금), "", "");
     html += kpi("평균 월세", fmtWon(last.평균월세)+"/월", "", "");
     html += kpi("총 거래", last.거래수?.toLocaleString()+"건", "", "");
     html += kpi("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)}~${last.ym.slice(0,4)}.${last.ym.slice(4)}`, "", "");
   }
   document.getElementById("kpi-overview").innerHTML = html;
-
   const labels = data.map(d=>`${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
-  const vals   = currentType==="trade" ? data.map(d=>d.전체평균/10000||0) : data.map(d=>d.평균보증금/10000||0);
-  document.getElementById("ts-label").textContent = currentType==="trade" ? "월별 평균 매매가 추이 (이상치 제거)" : "월별 평균 보증금 추이 (이상치 제거)";
+  const vals = currentType==="trade" ? data.map(d=>d.전체평균/10000||0) : data.map(d=>d.평균보증금/10000||0);
+  document.getElementById("ts-label").textContent = currentType==="trade" ? "월별 평균 매매가 추이" : "월별 평균 보증금 추이";
   destroy("tsChart");
   charts.ts = new Chart(document.getElementById("tsChart"),{type:"line",data:{labels,datasets:[{label:"억원",data:vals,borderColor:"#3b7cf4",backgroundColor:"rgba(59,124,244,.1)",tension:.4,fill:true,pointRadius:5,pointBackgroundColor:"#3b7cf4"}]},options:cOpts("억원")});
-
   destroy("volChart");
   charts.vol = new Chart(document.getElementById("volChart"),{type:"bar",data:{labels,datasets:[{label:"거래수",data:data.map(d=>d.거래수||0),backgroundColor:"rgba(245,158,11,.6)",borderColor:"#f59e0b",borderWidth:1,borderRadius:4}]},options:cOpts("건")});
 }
 
-function kpi(label, value, sub, dir) {
-  return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub ${dir}">${sub}</div>`:""}</div>`;
+// ── 거래 내역 ─────────────────────────────────────────
+async function selectGu(gu, btn) {
+  document.querySelectorAll(".gu-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  txSelectedGu = gu;
+  await loadTxData(gu);
+}
+
+async function loadTxData(gu) {
+  document.getElementById("tx-loading").style.display = "block";
+  document.getElementById("tx-table-wrap").style.display = "none";
+  document.getElementById("tx-stat-bar").style.display = "none";
+  document.getElementById("tx-pagination").innerHTML = "";
+
+  const ym = txCurrentMonth;
+  const fileType = currentTxType === "trade" ? "apt_trade" : "apt_rent";
+  const url = `data/${fileType}/${ym}.csv`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("CSV 없음");
+    const text = await res.text();
+    const rows = parseCSV(text);
+    // 해당 구만 필터
+    txData = rows.filter(r => r["구"] === gu);
+    txCurrentPage = 1;
+    txSortCol = null;
+    applyTxFilter();
+    document.getElementById("tx-loading").style.display = "none";
+    document.getElementById("tx-table-wrap").style.display = "block";
+    document.getElementById("tx-stat-bar").style.display = "flex";
+  } catch(e) {
+    document.getElementById("tx-loading").textContent = "⚠️ 데이터를 불러오지 못했습니다.";
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  // BOM 제거
+  const header = lines[0].replace(/^\uFEFF/, "").split(",");
+  return lines.slice(1).map(line => {
+    const vals = line.split(",");
+    const obj = {};
+    header.forEach((h, i) => obj[h.trim()] = (vals[i]||"").trim());
+    return obj;
+  });
+}
+
+function applyTxFilter() {
+  const search = document.getElementById("tx-search").value.toLowerCase();
+  const sizeVal = document.getElementById("tx-size-filter").value;
+
+  txFiltered = txData.filter(r => {
+    // 아파트명 검색
+    if (search && !(r["아파트명"]||"").toLowerCase().includes(search)) return false;
+    // 면적 필터
+    const area = parseFloat(r["전용면적"]||0);
+    if (sizeVal === "60"  && area > 60) return false;
+    if (sizeVal === "85"  && (area <= 60 || area > 85)) return false;
+    if (sizeVal === "135" && (area <= 85 || area > 135)) return false;
+    if (sizeVal === "999" && area <= 135) return false;
+    return true;
+  });
+
+  // 정렬
+  if (txSortCol) {
+    txFiltered.sort((a,b) => {
+      let va = a[txSortCol]||"", vb = b[txSortCol]||"";
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return (na-nb)*txSortDir;
+      return va.localeCompare(vb)*txSortDir;
+    });
+  }
+
+  renderTxTable();
+  renderTxStat();
+  renderTxPagination();
+}
+
+function renderTxTable() {
+  const isTrade = currentTxType === "trade";
+  const start = (txCurrentPage-1)*txPageSize;
+  const page = txFiltered.slice(start, start+txPageSize);
+
+  // 헤더
+  const tradeCols = ["아파트명","법정동","전용면적","층","건축년도","거래금액","년","월","일","거래유형"];
+  const rentCols  = ["아파트명","법정동","전용면적","층","건축년도","보증금","월세","년","월","일"];
+  const cols = isTrade ? tradeCols : rentCols;
+
+  const colLabels = {
+    "아파트명":"아파트명","법정동":"법정동","전용면적":"면적(㎡)","층":"층",
+    "건축년도":"건축년도","거래금액":"거래금액","보증금":"보증금","월세":"월세",
+    "년":"년","월":"월","일":"일","거래유형":"거래유형"
+  };
+  const priceCols = ["거래금액","보증금","월세"];
+
+  let thead = "<tr>";
+  cols.forEach(col => {
+    let cls = txSortCol===col ? (txSortDir===1?"sort-asc":"sort-desc") : "";
+    thead += `<th class="${cls}" onclick="sortTx('${col}')">${colLabels[col]||col}</th>`;
+  });
+  thead += "</tr>";
+  document.getElementById("tx-thead").innerHTML = thead;
+
+  let tbody = "";
+  if (!page.length) {
+    tbody = `<tr><td colspan="${cols.length}" style="text-align:center;padding:32px;color:var(--muted)">거래 내역이 없습니다.</td></tr>`;
+  } else {
+    page.forEach(r => {
+      tbody += "<tr>";
+      cols.forEach(col => {
+        let val = r[col]||"–";
+        let cls = priceCols.includes(col) ? " class=\"price\"" : "";
+        // 거래금액 포맷
+        if (priceCols.includes(col) && val !== "–") {
+          const n = parseFloat(val);
+          if (!isNaN(n)) val = fmtWon(n) + ` <span style="font-size:.68rem;color:var(--muted)">(${Number(n).toLocaleString()}만)</span>`;
+        }
+        tbody += `<td${cls}>${val}</td>`;
+      });
+      tbody += "</tr>";
+    });
+  }
+  document.getElementById("tx-tbody").innerHTML = tbody;
+}
+
+function renderTxStat() {
+  const isTrade = currentTxType === "trade";
+  const priceKey = isTrade ? "거래금액" : "보증금";
+  const prices = txFiltered.map(r=>parseFloat(r[priceKey]||0)).filter(v=>v>0);
+  const avg = prices.length ? prices.reduce((s,v)=>s+v,0)/prices.length : 0;
+  const sorted = [...prices].sort((a,b)=>a-b);
+  const med = sorted.length ? sorted[Math.floor(sorted.length/2)] : 0;
+  const mx  = sorted.length ? sorted[sorted.length-1] : 0;
+  const mn  = sorted.length ? sorted[0] : 0;
+
+  document.getElementById("tx-stat-bar").innerHTML = `
+    <div class="stat-item"><span>총</span><strong>${txFiltered.length.toLocaleString()}건</strong></div>
+    <div class="stat-item"><span>평균가</span><strong>${fmtWon(avg)}</strong></div>
+    <div class="stat-item"><span>중위가</span><strong>${fmtWon(med)}</strong></div>
+    <div class="stat-item"><span>최고가</span><strong>${fmtWon(mx)}</strong></div>
+    <div class="stat-item"><span>최저가</span><strong>${fmtWon(mn)}</strong></div>
+    <div class="stat-item"><span>${txSelectedGu}</span><strong>${txCurrentMonth.slice(0,4)}년 ${txCurrentMonth.slice(4)}월</strong></div>
+  `;
+}
+
+function renderTxPagination() {
+  const total = Math.ceil(txFiltered.length / txPageSize);
+  if (total <= 1) { document.getElementById("tx-pagination").innerHTML = ""; return; }
+  let html = "";
+  for (let i=1; i<=total; i++) {
+    html += `<button class="page-btn${i===txCurrentPage?" active":""}" onclick="goTxPage(${i})">${i}</button>`;
+  }
+  document.getElementById("tx-pagination").innerHTML = html;
+}
+
+function goTxPage(p) { txCurrentPage = p; renderTxTable(); renderTxPagination(); document.getElementById("tx-table-wrap").scrollTop = 0; }
+
+function sortTx(col) {
+  if (txSortCol === col) { txSortDir *= -1; } else { txSortCol = col; txSortDir = -1; }
+  applyTxFilter();
 }
 
 // ── 구별 상세 ─────────────────────────────────────────
 function renderDetail() {
   if (!S || !currentMonth) return;
-  renderGuRank(); renderSizeTable(); renderPopular();
-
-  // KPI
   const tData = S.trade.find(d=>d.ym===currentMonth);
   const rData = S.rent.find(d=>d.ym===currentMonth);
   let html = "";
   if (currentType2==="trade" && tData) {
-    html += kpi("이상치 제거 후 평균", fmtWon(tData.전체평균), "", "");
-    html += kpi("이상치 제거 후 중위", fmtWon(tData.전체중위), "", "");
+    html += kpi("이상치 제거 평균", fmtWon(tData.전체평균), "", "");
+    html += kpi("중위가", fmtWon(tData.전체중위), "", "");
     html += kpi("총 거래", tData.거래수?.toLocaleString()+"건", "", "");
     html += kpi("기준 월", `${currentMonth.slice(0,4)}년 ${currentMonth.slice(4)}월`, "", "");
   } else if (rData) {
@@ -354,90 +600,66 @@ function renderDetail() {
     html += kpi("기준 월", `${currentMonth.slice(0,4)}년 ${currentMonth.slice(4)}월`, "", "");
   }
   document.getElementById("kpi-detail").innerHTML = html;
+  renderGuRank(); renderSizeTable(); renderPopular();
+}
+
+function rankTable(list, color) {
+  if (!list.length) return `<tr><td style="color:var(--muted);padding:16px">데이터 없음</td></tr>`;
+  const max = list[0].평균가||1;
+  let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>중위가</th><th>거래수</th></tr>`;
+  list.forEach((d,i) => {
+    const pct = Math.round((d.평균가/max)*100);
+    html += `<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:600">${d.구}</td>
+      <td>${fmtWon(d.평균가)}<div class="bar"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></td>
+      <td style="color:var(--muted)">${fmtWon(d.중위가)}</td>
+      <td style="color:var(--muted)">${d.거래수}건</td></tr>`;
+  });
+  return html;
 }
 
 function renderGuRank() {
   const tData = S.trade.find(d=>d.ym===currentMonth);
   const rData = S.rent.find(d=>d.ym===currentMonth);
   const list = currentType2==="trade" ? (tData?.구별||[]) : (rData?.구별전세||[]);
-  if (!list.length) return;
-  const max = list[0].평균가||1;
-  let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>중위가</th><th>거래수</th></tr>`;
-  list.forEach((d,i) => {
-    const pct = Math.round((d.평균가/max)*100);
-    html += `<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:600">${d.구}</td>
-      <td>${fmtWon(d.평균가)}<div class="bar"><div class="bar-fill" style="width:${pct}%;background:var(--blue)"></div></div></td>
-      <td style="color:var(--muted)">${fmtWon(d.중위가)}</td>
-      <td style="color:var(--muted)">${d.거래수}건</td></tr>`;
-  });
-  document.getElementById("gu-rank-table").innerHTML = html;
+  document.getElementById("gu-rank-table").innerHTML = rankTable(list, "var(--blue)");
 }
-
 function renderSizeTable() {
   const tData = S.trade.find(d=>d.ym===currentMonth);
-  const rData = S.rent.find(d=>d.ym===currentMonth);
-  const map   = currentType2==="trade" ? (tData?.면적별||{}) : {};
-  const list  = map[currentSize] || [];
-  if (!list.length) { document.getElementById("size-table").innerHTML=`<tr><td style="color:var(--muted);padding:16px">데이터 없음</td></tr>`; return; }
-  const max = list[0].평균가||1;
-  let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>중위가</th><th>거래수</th></tr>`;
-  list.forEach((d,i) => {
-    const pct = Math.round((d.평균가/max)*100);
-    html += `<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:600">${d.구}</td>
-      <td>${fmtWon(d.평균가)}<div class="bar"><div class="bar-fill" style="width:${pct}%;background:var(--purple)"></div></div></td>
-      <td style="color:var(--muted)">${fmtWon(d.중위가)}</td>
-      <td style="color:var(--muted)">${d.거래수}건</td></tr>`;
-  });
-  document.getElementById("size-table").innerHTML = html;
+  const list = (tData?.면적별||{})[currentSize]||[];
+  document.getElementById("size-table").innerHTML = rankTable(list, "var(--purple)");
 }
-
 function renderPopular() {
   const tData = S.trade.find(d=>d.ym===currentMonth);
   const rData = S.rent.find(d=>d.ym===currentMonth);
   const popMap = currentType2==="trade" ? (tData?.국민평형||{}) : (rData?.국민평형전세||{});
-
   ["59㎡","84㎡"].forEach((label, idx) => {
-    const list = popMap[label] || [];
-    const tableId = idx===0 ? "popular59-table" : "popular84-table";
-    if (!list.length) { document.getElementById(tableId).innerHTML=`<tr><td style="color:var(--muted);padding:12px">데이터 부족</td></tr>`; return; }
-    const max = list[0].평균가||1;
-    let html = `<tr><th>순위</th><th>자치구</th><th>평균가</th><th>중위가</th><th>거래수</th></tr>`;
-    list.slice(0,15).forEach((d,i) => {
-      const pct = Math.round((d.평균가/max)*100);
-      html += `<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:600">${d.구}</td>
-        <td>${fmtWon(d.평균가)}<div class="bar"><div class="bar-fill" style="width:${pct}%;background:var(--amber)"></div></div></td>
-        <td style="color:var(--muted)">${fmtWon(d.중위가)}</td>
-        <td style="color:var(--muted)">${d.거래수}건</td></tr>`;
-    });
-    document.getElementById(tableId).innerHTML = html;
+    const list = (popMap[label]||[]).slice(0,15);
+    const id = idx===0?"popular59-table":"popular84-table";
+    document.getElementById(id).innerHTML = rankTable(list, "var(--amber)");
   });
 }
 
 // ── 전세가율 ─────────────────────────────────────────
 function renderJeonse() {
   const jData = S.jeonse_rate; if(!jData||!jData.length) return;
-  const buyN  = jData.filter(d=>d.신호==="매수고려").length;
-  const avgR  = (jData.reduce((s,d)=>s+d.전세가율,0)/jData.length).toFixed(1);
+  const buyN = jData.filter(d=>d.신호==="매수고려").length;
+  const avgR = (jData.reduce((s,d)=>s+d.전세가율,0)/jData.length).toFixed(1);
   let html = "";
   html += kpi("서울 평균 전세가율", avgR+"%", "", "");
   html += kpi("매수고려 구역", buyN+"개 구", "70% 이상", "");
   html += kpi("전세가율 1위", jData[0].구, jData[0].전세가율+"%", "");
-  html += kpi("기준 월", `${jData[0].ym?.slice(0,4)||""}년 ${jData[0].ym?.slice(4)||""}월`, "최근 실거래 기준", "");
+  html += kpi("기준 월", `${jData[0].ym?.slice(0,4)||""}년 ${jData[0].ym?.slice(4)||""}월`, "", "");
   document.getElementById("kpi-jeonse").innerHTML = html;
-
   let tbl = `<tr><th>순위</th><th>자치구</th><th>전세가율</th><th>매매 중위가</th><th>전세 중위가</th><th>신호</th></tr>`;
   jData.forEach((d,i) => {
     const pct = Math.min(d.전세가율,100);
     const color = d.신호==="매수고려"?"var(--green)":d.신호==="주의"?"var(--yellow)":"var(--muted)";
-    const cls   = d.신호==="매수고려"?"badge-buy":d.신호==="주의"?"badge-warn":"badge-wait";
-    tbl += `<tr>
-      <td style="color:var(--muted)">${i+1}</td>
-      <td style="font-weight:600">${d.구}</td>
+    const cls = d.신호==="매수고려"?"badge-buy":d.신호==="주의"?"badge-warn":"badge-wait";
+    tbl += `<tr><td style="color:var(--muted)">${i+1}</td><td style="font-weight:600">${d.구}</td>
       <td><span style="color:${color};font-weight:700">${d.전세가율}%</span><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></td>
       <td style="color:var(--muted)">${fmtWon(d.평균매매가)}</td>
       <td style="color:var(--muted)">${fmtWon(d.평균전세가)}</td>
-      <td><span class="badge ${cls}">${d.신호}</span></td>
-    </tr>`;
+      <td><span class="badge ${cls}">${d.신호}</span></td></tr>`;
   });
   document.getElementById("jeonse-table").innerHTML = tbl;
 }
@@ -447,24 +669,15 @@ function runBudget() {
   const minB = parseFloat(document.getElementById("b-min").value)||0;
   const maxB = parseFloat(document.getElementById("b-max").value)||Infinity;
   const size = document.getElementById("b-size").value;
-  const tData = S.trade[S.trade.length-1];
-  if (!tData) return;
-
+  const tData = S.trade[S.trade.length-1]; if(!tData) return;
   let results = [];
-
   if (size==="all") {
-    results = (tData.구별||[]).filter(d=>d.중위가>=minB&&d.중위가<=maxB)
-      .map(d=>({구:d.구, 가격:d.중위가, 거래수:d.거래수, 면적:"전체", 기준:"중위가"}));
+    results = (tData.구별||[]).filter(d=>d.중위가>=minB&&d.중위가<=maxB).map(d=>({구:d.구,가격:d.중위가,거래수:d.거래수,면적:"전체"}));
   } else if (size==="59㎡"||size==="84㎡") {
-    const list = tData.국민평형?.[size]||[];
-    results = list.filter(d=>d.중위가>=minB&&d.중위가<=maxB)
-      .map(d=>({구:d.구, 가격:d.중위가, 거래수:d.거래수, 면적:size, 기준:"중위가"}));
+    results = (tData.국민평형?.[size]||[]).filter(d=>d.중위가>=minB&&d.중위가<=maxB).map(d=>({구:d.구,가격:d.중위가,거래수:d.거래수,면적:size}));
   } else {
-    const list = tData.면적별?.[size]||[];
-    results = list.filter(d=>d.중위가>=minB&&d.중위가<=maxB)
-      .map(d=>({구:d.구, 가격:d.중위가, 거래수:d.거래수, 면적:size, 기준:"중위가"}));
+    results = (tData.면적별?.[size]||[]).filter(d=>d.중위가>=minB&&d.중위가<=maxB).map(d=>({구:d.구,가격:d.중위가,거래수:d.거래수,면적:size}));
   }
-
   results.sort((a,b)=>a.가격-b.가격);
   const el = document.getElementById("budget-results");
   if (!results.length) { el.innerHTML=`<div class="empty">해당 예산 범위 거래 없음. 범위를 조정해보세요!</div>`; return; }
