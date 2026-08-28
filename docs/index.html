@@ -139,6 +139,28 @@
         <button class="tab-btn" data-type="rent">전월세</button>
       </div>
     </div>
+
+    <!-- 전일 거래 요약 -->
+    <div style="padding:16px 40px 0">
+      <div class="section-title">📅 전일 거래 요약</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="card" id="daily-trade-card">
+          <div class="card-title">🏠 전일 매매 거래</div>
+          <div id="daily-trade-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
+        </div>
+        <div class="card" id="daily-rent-card">
+          <div class="card-title">📋 전일 전월세 거래</div>
+          <div id="daily-rent-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
+        </div>
+      </div>
+
+      <!-- 주간 시세 동향 -->
+      <div class="section-title">📈 주간 아파트 시세 동향 <span style="font-size:.7rem;color:var(--muted)">(한국부동산원)</span></div>
+      <div class="card" style="margin-bottom:16px">
+        <div id="weekly-price-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
+      </div>
+    </div>
+
     <div class="kpi-row" id="kpi-overview"></div>
     <div class="section">
       <div class="chart-grid" style="margin-bottom:13px">
@@ -313,7 +335,7 @@ async function load() {
       guGrid.appendChild(btn);
     });
 
-    renderOverview(); renderDetail(); renderJeonse();
+    renderOverview(); renderDetail(); renderJeonse(); renderDailyRecap(); renderWeeklyPrice();
   } catch(e) {
     document.getElementById("loading").textContent = "⚠️ 데이터를 불러오지 못했습니다.";
   }
@@ -390,6 +412,91 @@ function cOpts(unit) {
 }
 function kpi(label, value, sub, dir) {
   return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub ${dir}">${sub}</div>`:""}</div>`;
+}
+
+// ── 전일 거래 요약 ──────────────────────────────────
+function renderDailyRecap() {
+  const recap = S.daily_recap;
+  if (!recap || !recap.date) return;
+
+  const tradeEl = document.getElementById("daily-trade-content");
+  const rentEl  = document.getElementById("daily-rent-content");
+
+  if (recap.trade && recap.trade.건수 > 0) {
+    const topGu = recap.trade.구별?.slice(0,3).map(g=>g.구+"("+g.거래수+"건)").join(", ") || "";
+    tradeEl.innerHTML = `
+      <div class="stat-bar" style="margin-bottom:10px">
+        <div class="stat-item"><span>기준일</span><strong>${recap.date}</strong></div>
+        <div class="stat-item"><span>총 거래</span><strong>${recap.trade.건수}건</strong></div>
+        <div class="stat-item"><span>평균가</span><strong>${fmtWon(recap.trade.평균가)}</strong></div>
+        <div class="stat-item"><span>최고가</span><strong>${fmtWon(recap.trade.최고가)}</strong></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted)">최고가 단지: <span style="color:var(--amber)">${recap.trade.최고가_단지||"–"}</span></div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:4px">거래 많은 구: ${topGu||"–"}</div>
+    `;
+  } else {
+    tradeEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">전일(${recap.date}) 신고된 매매 거래 없음<br><span style="font-size:.75rem">* 실거래 신고는 계약 후 30일 내 신고</span></div>`;
+  }
+
+  if (recap.rent && recap.rent.건수 > 0) {
+    const topGu = recap.rent.구별?.slice(0,3).map(g=>g.구+"("+g.거래수+"건)").join(", ") || "";
+    rentEl.innerHTML = `
+      <div class="stat-bar" style="margin-bottom:10px">
+        <div class="stat-item"><span>기준일</span><strong>${recap.date}</strong></div>
+        <div class="stat-item"><span>총 거래</span><strong>${recap.rent.건수}건</strong></div>
+        <div class="stat-item"><span>평균보증금</span><strong>${fmtWon(recap.rent.평균보증금)}</strong></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted)">거래 많은 구: ${topGu||"–"}</div>
+    `;
+  } else {
+    rentEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">전일(${recap.date}) 신고된 전월세 거래 없음</div>`;
+  }
+}
+
+// ── 주간 시세 동향 ──────────────────────────────────
+function renderWeeklyPrice() {
+  const data = S.weekly_price;
+  const el = document.getElementById("weekly-price-content");
+  if (!data || !data.length) {
+    el.innerHTML = `<div style="color:var(--muted)">주간 시세 데이터 없음</div>`;
+    return;
+  }
+
+  // 서울 전체 데이터만 추출
+  const seoul = data.filter(d => d.지역 === "서울" || d.지역 === "서울특별시");
+  if (!seoul.length) {
+    el.innerHTML = `<div style="color:var(--muted)">서울 시세 데이터 없음</div>`;
+    return;
+  }
+
+  const recent = seoul.slice(-8); // 최근 8주
+  const latest = recent[recent.length-1];
+  const prev   = recent[recent.length-2];
+  const chg    = latest && prev ? (latest.변동률).toFixed(2) : null;
+  const chgColor = chg > 0 ? "var(--red)" : chg < 0 ? "var(--teal)" : "var(--muted)";
+  const chgIcon  = chg > 0 ? "▲" : chg < 0 ? "▼" : "–";
+
+  let html = `<div class="stat-bar" style="margin-bottom:14px">
+    <div class="stat-item"><span>기준</span><strong>${latest?.기준일||"–"}</strong></div>
+    <div class="stat-item"><span>서울 주간 변동률</span><strong style="color:${chgColor}">${chgIcon} ${Math.abs(chg||0)}%</strong></div>
+    <div class="stat-item"><span>지수</span><strong>${latest?.지수||"–"}</strong></div>
+  </div>`;
+
+  // 주간 변동률 미니 차트 (텍스트 바)
+  html += `<div style="display:flex;gap:6px;align-items:flex-end;height:60px">`;
+  const maxAbs = Math.max(...recent.map(d=>Math.abs(d.변동률||0)), 0.01);
+  recent.forEach(d => {
+    const h = Math.round((Math.abs(d.변동률||0)/maxAbs)*50)+4;
+    const color = d.변동률>0?"var(--red)":d.변동률<0?"var(--teal)":"var(--muted)";
+    const label = d.기준일?.slice(4,8)||"";
+    html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="font-size:.65rem;color:${color}">${d.변동률>0?"+":""}${(d.변동률||0).toFixed(2)}%</div>
+      <div style="width:100%;height:${h}px;background:${color};border-radius:2px;opacity:.8"></div>
+      <div style="font-size:.6rem;color:var(--muted)">${label}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
 }
 
 // ── 시장 개요 ─────────────────────────────────────────
