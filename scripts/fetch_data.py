@@ -118,22 +118,26 @@ def fetch_weekly_price():
         print("  REB_API_KEY 없음, 주간 시세 건너뜀")
         return []
 
-    # 통계표 코드: R214 = 주간 아파트 매매가격지수
     params = {
         "KEY": REB_API_KEY,
         "Type": "json",
         "pIndex": 1,
         "pSize": 100,
-        "STATBL_ID": "R214",  # 주간 아파트 매매가격지수
-        "DTACYCLE_CD": "WK",  # 주간
+        "STATBL_ID": "R214",
+        "DTACYCLE_CD": "WK",
         "WRTTIME_IDTFR_ID": (datetime.today()-timedelta(weeks=12)).strftime("%Y%m%d"),
         "WRTTIME_IDTFR_ID_END": datetime.today().strftime("%Y%m%d"),
-        "AREA_ID": "11",  # 서울
+        "AREA_ID": "11",
     }
     try:
         res = requests.get(REB_BASE_URL, params=params, timeout=15)
         data = res.json()
-        items = data.get("SttsApiTblData", [{}])[1].get("row", [])
+        print(f"  주간 시세 응답: {str(data)[:300]}")
+        stts_data = data.get("SttsApiTblData", [])
+        if not stts_data or len(stts_data) < 2:
+            print(f"  주간 시세 응답 구조 오류")
+            return []
+        items = stts_data[1].get("row", [])
         result = []
         for item in items:
             result.append({
