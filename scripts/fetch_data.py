@@ -152,6 +152,46 @@ items = stts_data[1].get("row", [])
         print(f"  주간 시세 오류: {e}")
         return []
 
+def fetch_weekly_price():
+    """한국부동산원 주간 아파트 가격동향 수집"""
+    if not REB_API_KEY:
+        print("  REB_API_KEY 없음, 주간 시세 건너뜀")
+        return []
+
+    params = {
+        "KEY": REB_API_KEY,
+        "Type": "json",
+        "pIndex": 1,
+        "pSize": 100,
+        "STATBL_ID": "R214",
+        "DTACYCLE_CD": "WK",
+        "WRTTIME_IDTFR_ID": (datetime.today()-timedelta(weeks=12)).strftime("%Y%m%d"),
+        "WRTTIME_IDTFR_ID_END": datetime.today().strftime("%Y%m%d"),
+        "AREA_ID": "11",
+    }
+    try:
+        res = requests.get(REB_BASE_URL, params=params, timeout=15)
+        data = res.json()
+        print(f"  주간 시세 응답: {str(data)[:200]}")
+        stts_data = data.get("SttsApiTblData", [])
+        if len(stts_data) < 2:
+            print(f"  주간 시세 응답 구조 오류")
+            return []
+        items = stts_data[1].get("row", [])
+        result = []
+        for item in items:
+            result.append({
+                "지역": item.get("AREA_NM", ""),
+                "기준일": item.get("WRTTIME_IDTFR_ID", ""),
+                "지수": float(item.get("DATA_VALUE", 0) or 0),
+                "변동률": float(item.get("CMPRSN_VALUE", 0) or 0),
+            })
+        print(f"  주간 시세: {len(result)}건")
+        return result
+    except Exception as e:
+        print(f"  주간 시세 오류: {e}")
+        return []
+        
 def make_daily_recap(trade_dir, rent_dir):
     """전일 거래 요약 생성"""
     today = datetime.today()
