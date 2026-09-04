@@ -28,8 +28,9 @@ jobs:
         env:
           MOLIT_TRADE_API_KEY: ${{ secrets.MOLIT_TRADE_API_KEY }}
           MOLIT_RENT_API_KEY:  ${{ secrets.MOLIT_RENT_API_KEY }}
+          REB_API_KEY:         ${{ secrets.REB_API_KEY }}
         run: python scripts/fetch_data.py
-
+        
       - name: 변경사항 커밋 & 푸시
         run: |
           git config user.name  "github-actions[bot]"
