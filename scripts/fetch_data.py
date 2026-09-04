@@ -27,7 +27,7 @@ BASE_TRADE_URL = "http://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSD
 BASE_RENT_URL  = "http://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent"
 
 # 한국부동산원 R-ONE API
-REB_BASE_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTbl.do"
+REB_BASE_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do"
 
 def get_ym_list(months_back=3):
     return [(datetime.today()-timedelta(days=30*i)).strftime("%Y%m") for i in range(months_back)]
@@ -119,7 +119,7 @@ def fetch_weekly_price():
         return []
 
     params = {
-        "KEY": REB_API_KEY,
+        "key": REB_API_KEY,
         "Type": "json",
         "pIndex": 1,
         "pSize": 100,
