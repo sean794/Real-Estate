@@ -118,39 +118,47 @@ def fetch_weekly_price():
         print("  REB_API_KEY 없음, 주간 시세 건너뜀")
         return []
 
-    params = {
-        "key": REB_API_KEY,
-        "Type": "json",
-        "pIndex": 1,
-        "pSize": 100,
-        "STATBL_ID": "R214",
-        "DTACYCLE_CD": "WK",
-        "WRTTIME_IDTFR_ID": (datetime.today()-timedelta(weeks=12)).strftime("%Y%m%d"),
-        "WRTTIME_IDTFR_ID_END": datetime.today().strftime("%Y%m%d"),
-        "AREA_ID": "11",
-    }
-    try:
-        res = requests.get(REB_BASE_URL, params=params, timeout=15)
-        data = res.json()
-        print(f"  주간 시세 응답: {str(data)[:300]}")
-        stts_data = data.get("SttsApiTblData", [])
-        if not stts_data or len(stts_data) < 2:
-            print(f"  주간 시세 응답 구조 오류")
-            return []
-        items = stts_data[1].get("row", [])
-        result = []
-        for item in items:
-            result.append({
-                "지역": item.get("AREA_NM", ""),
-                "기준일": item.get("WRTTIME_IDTFR_ID", ""),
-                "지수": float(item.get("DATA_VALUE", 0) or 0),
-                "변동률": float(item.get("CMPRSN_VALUE", 0) or 0),
-            })
-        print(f"  주간 시세: {len(result)}건")
-        return result
-    except Exception as e:
-        print(f"  주간 시세 오류: {e}")
-        return []
+    # 주간 아파트 매매가격지수 변동률 STATBL_ID
+    # A_2024_00045: 주간 아파트 매매가격지수
+    statbl_ids = ["A_2024_00045", "A_2024_00046", "R214", "A_2024_00900"]
+
+    for statbl_id in statbl_ids:
+        params = {
+            "KEY": REB_API_KEY,
+            "Type": "json",
+            "pIndex": 1,
+            "pSize": 10,
+            "STATBL_ID": statbl_id,
+            "DTACYCLE_CD": "WK",
+            "WRTTIME_IDTFR_ID": "20260801",
+            "WRTTIME_IDTFR_ID_END": "20260904",
+        }
+        try:
+            res = requests.get(
+                "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do",
+                params=params, timeout=15
+            )
+            data = res.json()
+            print(f"  [{statbl_id}] 응답: {str(data)[:200]}")
+            stts_data = data.get("SttsApiTblData", [])
+            if stts_data and len(stts_data) >= 2:
+                items = stts_data[1].get("row", [])
+                if items:
+                    print(f"  [{statbl_id}] 데이터 발견! {len(items)}건")
+                    result = []
+                    for item in items:
+                        result.append({
+                            "지역": item.get("AREA_NM", ""),
+                            "기준일": item.get("WRTTIME_IDTFR_ID", ""),
+                            "지수": float(item.get("DATA_VALUE", 0) or 0),
+                            "변동률": float(item.get("CMPRSN_VALUE", 0) or 0),
+                        })
+                    return result
+        except Exception as e:
+            print(f"  [{statbl_id}] 오류: {e}")
+
+    print("  주간 시세: 모든 STATBL_ID 실패")
+    return []
 
 def make_daily_recap(trade_dir, rent_dir):
     """전일 거래 요약 생성"""
