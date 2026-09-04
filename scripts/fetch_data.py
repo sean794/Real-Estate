@@ -133,7 +133,11 @@ def fetch_weekly_price():
     try:
         res = requests.get(REB_BASE_URL, params=params, timeout=15)
         data = res.json()
-        items = data.get("SttsApiTblData", [{}])[1].get("row", [])
+        stts_data = data.get("SttsApiTblData", [])
+if len(stts_data) < 2:
+    print(f"  주간 시세 응답 구조 오류: {data}")
+    return []
+items = stts_data[1].get("row", [])
         result = []
         for item in items:
             result.append({
