@@ -160,47 +160,49 @@ def fetch_weekly_price():
     print("  주간 시세: 모든 STATBL_ID 실패")
     return []
 
-def make_daily_recap(trade_dir, rent_dir):
-    """전일 거래 요약 생성"""
+def make_daily_recap(trade_dir, rent_dir, days=7):
+    """최근 N일(전일까지) 계약 거래 요약. 신고 지연 때문에 하루 단위는 건수가 너무 적어 7일 창으로 집계."""
     today = datetime.today()
-    ym = today.strftime("%Y%m")
-    yesterday = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    end = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    start = (today - timedelta(days=days)).strftime("%Y-%m-%d")
+    yms = sorted({(today - timedelta(days=i)).strftime("%Y%m") for i in range(days + 1)})
+    label = f"{start} ~ {end} (최근 {days}일)"
 
     recap = {
-        "date": yesterday,
+        "date": label,
         "trade": {"건수":0,"평균가":0,"최고가":0,"최고가_단지":"","구별":[]},
         "rent":  {"건수":0,"평균보증금":0,"구별":[]},
     }
 
-    trade_file = trade_dir / f"{ym}.csv"
-    if trade_file.exists():
-        df = pd.read_csv(trade_file, encoding="utf-8-sig")
-        df["거래금액"] = pd.to_numeric(df["거래금액"].astype(str).str.replace(",",""), errors="coerce")
-        # 전일 거래 필터 (년월일 조합)
+    def load(dir_, col):
+        frames = []
+        for ym in yms:
+            f = dir_ / f"{ym}.csv"
+            if f.exists():
+                frames.append(pd.read_csv(f, encoding="utf-8-sig"))
+        if not frames:
+            return None
+        df = pd.concat(frames, ignore_index=True)
+        df[col] = pd.to_numeric(df[col].astype(str).str.replace(",",""), errors="coerce")
         df["날짜"] = df["년"].astype(str)+"-"+df["월"].astype(str).str.zfill(2)+"-"+df["일"].astype(str).str.zfill(2)
-        yesterday_df = df[df["날짜"] == yesterday]
-        if len(yesterday_df) > 0:
-            recap["trade"]["건수"] = len(yesterday_df)
-            recap["trade"]["평균가"] = round(float(yesterday_df["거래금액"].mean()), 0) if not yesterday_df["거래금액"].isna().all() else 0
-            max_row = yesterday_df.loc[yesterday_df["거래금액"].idxmax()] if not yesterday_df["거래금액"].isna().all() else None
-            if max_row is not None:
-                recap["trade"]["최고가"] = float(max_row["거래금액"])
-                recap["trade"]["최고가_단지"] = f"{max_row['구']} {max_row['아파트명']}"
-            # 구별 거래수
-            gu_cnt = yesterday_df.groupby("구").size().reset_index(name="거래수")
-            recap["trade"]["구별"] = gu_cnt.sort_values("거래수", ascending=False).to_dict(orient="records")
+        return df[(df["날짜"] >= start) & (df["날짜"] <= end)]
 
-    rent_file = rent_dir / f"{ym}.csv"
-    if rent_file.exists():
-        df = pd.read_csv(rent_file, encoding="utf-8-sig")
-        df["보증금"] = pd.to_numeric(df["보증금"].astype(str).str.replace(",",""), errors="coerce")
-        df["날짜"] = df["년"].astype(str)+"-"+df["월"].astype(str).str.zfill(2)+"-"+df["일"].astype(str).str.zfill(2)
-        yesterday_df = df[df["날짜"] == yesterday]
-        if len(yesterday_df) > 0:
-            recap["rent"]["건수"] = len(yesterday_df)
-            recap["rent"]["평균보증금"] = round(float(yesterday_df["보증금"].mean()), 0) if not yesterday_df["보증금"].isna().all() else 0
-            gu_cnt = yesterday_df.groupby("구").size().reset_index(name="거래수")
-            recap["rent"]["구별"] = gu_cnt.sort_values("거래수", ascending=False).to_dict(orient="records")
+    t = load(trade_dir, "거래금액")
+    if t is not None and len(t) > 0 and not t["거래금액"].isna().all():
+        recap["trade"]["건수"] = len(t)
+        recap["trade"]["평균가"] = round(float(t["거래금액"].mean()), 0)
+        m = t.loc[t["거래금액"].idxmax()]
+        recap["trade"]["최고가"] = float(m["거래금액"])
+        recap["trade"]["최고가_단지"] = f"{m['구']} {m['아파트명']}"
+        g = t.groupby("구").size().reset_index(name="거래수")
+        recap["trade"]["구별"] = g.sort_values("거래수", ascending=False).to_dict(orient="records")
+
+    r = load(rent_dir, "보증금")
+    if r is not None and len(r) > 0:
+        recap["rent"]["건수"] = len(r)
+        recap["rent"]["평균보증금"] = round(float(r["보증금"].mean()), 0) if not r["보증금"].isna().all() else 0
+        g = r.groupby("구").size().reset_index(name="거래수")
+        recap["rent"]["구별"] = g.sort_values("거래수", ascending=False).to_dict(orient="records")
 
     return recap
 

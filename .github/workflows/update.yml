@@ -1,8 +1,7 @@
 name: 서울 아파트 데이터 매일 업데이트
 
 on:
-  schedule:
-    - cron: "0 15 * * *"   # 매일 한국시간 자정 (UTC 15:00)
+  # 정기 실행은 서버 cron(server/run_daily.sh)이 담당 — Actions는 수동 실행만
   workflow_dispatch:         # 수동 실행 버튼도 활성화
 
 permissions:

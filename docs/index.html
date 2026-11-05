@@ -426,7 +426,7 @@ function renderDailyRecap() {
     const topGu = recap.trade.구별?.slice(0,3).map(g=>g.구+"("+g.거래수+"건)").join(", ") || "";
     tradeEl.innerHTML = `
       <div class="stat-bar" style="margin-bottom:10px">
-        <div class="stat-item"><span>기준일</span><strong>${recap.date}</strong></div>
+        <div class="stat-item"><span>기간</span><strong>${recap.date}</strong></div>
         <div class="stat-item"><span>총 거래</span><strong>${recap.trade.건수}건</strong></div>
         <div class="stat-item"><span>평균가</span><strong>${fmtWon(recap.trade.평균가)}</strong></div>
         <div class="stat-item"><span>최고가</span><strong>${fmtWon(recap.trade.최고가)}</strong></div>
@@ -435,21 +435,21 @@ function renderDailyRecap() {
       <div style="font-size:.78rem;color:var(--muted);margin-top:4px">거래 많은 구: ${topGu||"–"}</div>
     `;
   } else {
-    tradeEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">전일(${recap.date}) 신고된 매매 거래 없음<br><span style="font-size:.75rem">* 실거래 신고는 계약 후 30일 내 신고</span></div>`;
+    tradeEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">${recap.date} 신고된 매매 거래 없음<br><span style="font-size:.75rem">* 실거래 신고는 계약 후 30일 내 신고</span></div>`;
   }
 
   if (recap.rent && recap.rent.건수 > 0) {
     const topGu = recap.rent.구별?.slice(0,3).map(g=>g.구+"("+g.거래수+"건)").join(", ") || "";
     rentEl.innerHTML = `
       <div class="stat-bar" style="margin-bottom:10px">
-        <div class="stat-item"><span>기준일</span><strong>${recap.date}</strong></div>
+        <div class="stat-item"><span>기간</span><strong>${recap.date}</strong></div>
         <div class="stat-item"><span>총 거래</span><strong>${recap.rent.건수}건</strong></div>
         <div class="stat-item"><span>평균보증금</span><strong>${fmtWon(recap.rent.평균보증금)}</strong></div>
       </div>
       <div style="font-size:.78rem;color:var(--muted)">거래 많은 구: ${topGu||"–"}</div>
     `;
   } else {
-    rentEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">전일(${recap.date}) 신고된 전월세 거래 없음</div>`;
+    rentEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">${recap.date} 신고된 전월세 거래 없음</div>`;
   }
 }
 
