@@ -4,7 +4,13 @@ set -e
 REPO_DIR="$HOME/Real-Estate"
 command -v git >/dev/null || sudo apt-get install -y git
 command -v python3 >/dev/null || sudo apt-get install -y python3
-python3 -c "import pandas, requests" 2>/dev/null || sudo apt-get install -y python3-pandas python3-requests
+# 메모리가 작은 서버라 스왑 1GB 확보 + 불필요한 추천 패키지 제외
+if ! swapon --show | grep -q .; then
+  sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile >/dev/null && sudo swapon /swapfile
+  grep -q /swapfile /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+sudo dpkg --configure -a || true
+python3 -c "import pandas, requests" 2>/dev/null || sudo apt-get install -y --no-install-recommends python3-pandas python3-requests
 
 if [ ! -d "$REPO_DIR/.git" ]; then
   read -rsp "GitHub 토큰(sean794/Real-Estate contents:write): " TOKEN; echo
