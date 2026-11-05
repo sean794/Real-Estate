@@ -21,8 +21,13 @@ for page in range(1, 6):
     rows += got
     if len(got) < 1000: break
 print("통계표 수:", len(rows))
+if rows:
+    print("필드:", list(rows[0].keys()))
+    with open("logs/reb_all_tables.tsv", "w", encoding="utf-8") as f:
+        for x in rows:
+            f.write("\t".join(str(v) for v in x.values()) + "\n")
 for x in rows:
     nm = str(x.get("STATBL_NM", ""))
     cyc = str(x.get("DTACYCLE_NM", ""))
-    if ("아파트" in nm) and (("매매" in nm) or ("전세" in nm)) and ("주" in cyc or "주간" in nm):
+    if "아파트" in nm and ("매매" in nm or "전세" in nm):
         print(x.get("STATBL_ID"), "|", nm, "|", cyc)
