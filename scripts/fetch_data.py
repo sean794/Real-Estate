@@ -112,53 +112,50 @@ def gu_stats(prices, min_count=3):
     if len(filtered) < min_count: return None
     return {"평균가":round(float(filtered.mean()),0),"중위가":round(float(filtered.median()),0),"거래수":int(len(prices)),"필터후건수":int(len(filtered))}
 
+REB_WEEKLY_TABLES = {"매매": "T244183132827305", "전세": "T247713133046872"}  # (주) 매매/전세가격지수
+
+def _iso_week_ids(n=10):
+    """최근 n주의 R-ONE 주차 ID (YYYY + ISO 주차 2자리, 예: 202610 = 2026-03-02 주)"""
+    out, d = [], datetime.today()
+    for i in range(n):
+        y, w, _ = (d - timedelta(weeks=i)).isocalendar()
+        out.append(f"{y}{w:02d}")
+    return out[::-1]
+
 def fetch_weekly_price():
-    """한국부동산원 주간 아파트 가격동향 수집"""
+    """한국부동산원 R-ONE 주간 서울 매매/전세 가격지수 + 전주 대비 변동률"""
     if not REB_API_KEY:
         print("  REB_API_KEY 없음, 주간 시세 건너뜀")
         return []
 
-    # 주간 아파트 매매가격지수 변동률 STATBL_ID
-    # A_2024_00045: 주간 아파트 매매가격지수
-    statbl_ids = ["A_2024_00045", "A_2024_00046", "R214", "A_2024_00900"]
-
-    for statbl_id in statbl_ids:
-        params = {
-            "KEY": REB_API_KEY,
-            "Type": "json",
-            "pIndex": 1,
-            "pSize": 10,
-            "STATBL_ID": statbl_id,
-            "DTACYCLE_CD": "WK",
-            "WRTTIME_IDTFR_ID": "20260801",
-            "WRTTIME_IDTFR_ID_END": "20260904",
-        }
-        try:
-            res = requests.get(
-                "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do",
-                params=params, timeout=15
-            )
-            data = res.json()
-            print(f"  [{statbl_id}] 응답: {str(data)[:200]}")
-            stts_data = data.get("SttsApiTblData", [])
-            if stts_data and len(stts_data) >= 2:
-                items = stts_data[1].get("row", [])
-                if items:
-                    print(f"  [{statbl_id}] 데이터 발견! {len(items)}건")
-                    result = []
-                    for item in items:
-                        result.append({
-                            "지역": item.get("AREA_NM", ""),
-                            "기준일": item.get("WRTTIME_IDTFR_ID", ""),
-                            "지수": float(item.get("DATA_VALUE", 0) or 0),
-                            "변동률": float(item.get("CMPRSN_VALUE", 0) or 0),
-                        })
-                    return result
-        except Exception as e:
-            print(f"  [{statbl_id}] 오류: {e}")
-
-    print("  주간 시세: 모든 STATBL_ID 실패")
-    return []
+    result = []
+    for kind, statbl_id in REB_WEEKLY_TABLES.items():
+        series = []
+        for wid in _iso_week_ids(10):
+            try:
+                res = requests.get(REB_BASE_URL, params={
+                    "KEY": REB_API_KEY, "Type": "json", "pIndex": 1, "pSize": 1000,
+                    "STATBL_ID": statbl_id, "DTACYCLE_CD": "WK", "WRTTIME_IDTFR_ID": wid,
+                }, timeout=30)
+                body = res.json().get("SttsApiTblData", [])
+            except Exception as e:
+                print(f"  [{kind} {wid}] 오류: {e}")
+                continue
+            rows = body[1].get("row", []) if len(body) >= 2 else []
+            for r in rows:
+                if r.get("CLS_FULLNM") == "서울" and r.get("DTA_VAL") is not None:
+                    series.append((r.get("WRTTIME_DESC", ""), float(r["DTA_VAL"])))
+                    break
+        series.sort()
+        print(f"  주간 {kind}지수 서울: {len(series)}주 수집")
+        for i, (day, val) in enumerate(series):
+            prev = series[i-1][1] if i > 0 else None
+            result.append({
+                "구분": kind, "지역": "서울", "기준일": day.replace("-", ""),
+                "지수": round(val, 3),
+                "변동률": round((val/prev - 1) * 100, 3) if prev else 0.0,
+            })
+    return result
 
 def make_daily_recap(trade_dir, rent_dir, days=7):
     """최근 N일(전일까지) 계약 거래 요약. 신고 지연 때문에 하루 단위는 건수가 너무 적어 7일 창으로 집계."""

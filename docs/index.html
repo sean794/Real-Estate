@@ -463,7 +463,9 @@ function renderWeeklyPrice() {
   }
 
   // 서울 전체 데이터만 추출
-  const seoul = data.filter(d => d.지역 === "서울" || d.지역 === "서울특별시");
+  const seoul = data.filter(d => (d.지역 === "서울" || d.지역 === "서울특별시") && (!d.구분 || d.구분 === "매매"));
+  const jeonse = data.filter(d => d.지역 === "서울" && d.구분 === "전세");
+  const jLatest = jeonse[jeonse.length-1];
   if (!seoul.length) {
     el.innerHTML = `<div style="color:var(--muted)">서울 시세 데이터 없음</div>`;
     return;
@@ -479,7 +481,8 @@ function renderWeeklyPrice() {
   let html = `<div class="stat-bar" style="margin-bottom:14px">
     <div class="stat-item"><span>기준</span><strong>${latest?.기준일||"–"}</strong></div>
     <div class="stat-item"><span>서울 주간 변동률</span><strong style="color:${chgColor}">${chgIcon} ${Math.abs(chg||0)}%</strong></div>
-    <div class="stat-item"><span>지수</span><strong>${latest?.지수||"–"}</strong></div>
+    <div class="stat-item"><span>매매지수</span><strong>${latest?.지수||"–"}</strong></div>
+    ${jLatest?`<div class="stat-item"><span>서울 전세 변동률</span><strong style="color:${jLatest.변동률>0?"var(--red)":jLatest.변동률<0?"var(--teal)":"var(--muted)"}">${jLatest.변동률>0?"▲":jLatest.변동률<0?"▼":"–"} ${Math.abs(jLatest.변동률).toFixed(2)}%</strong></div>`:""}
   </div>`;
 
   // 주간 변동률 미니 차트 (텍스트 바)
