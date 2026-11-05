@@ -1,4 +1,4 @@
-=== 2026-11-05 06:15:50 UTC start ===
+=== 2026-11-05 06:20:11 UTC start ===
 수집 대상 월: ['202611', '202610', '202609']
   [매매] 종로구 202611: 0건
   [전월세] 종로구 202611: 2건
@@ -156,11 +156,15 @@
   [전월세] 강동구 202609: 863건
   저장: data/apt_trade/202609.csv (3510행)
   저장: data/apt_rent/202609.csv (14979행)
-  REB_API_KEY 없음, 주간 시세 건너뜀
+  [A_2024_00045] 응답: {'RESULT': {'CODE': 'INFO-200', 'MESSAGE': '해당하는 데이터가 없습니다.'}}
+  [A_2024_00046] 응답: {'RESULT': {'CODE': 'INFO-200', 'MESSAGE': '해당하는 데이터가 없습니다.'}}
+  [R214] 응답: {'RESULT': {'CODE': 'INFO-200', 'MESSAGE': '해당하는 데이터가 없습니다.'}}
+  [A_2024_00900] 응답: {'RESULT': {'CODE': 'INFO-200', 'MESSAGE': '해당하는 데이터가 없습니다.'}}
+  주간 시세: 모든 STATBL_ID 실패
 요약 JSON 저장: docs/data/summary.json
 
 ✅ 수집 완료!
 exit: 0
                total        used        free      shared  buff/cache   available
-Mem:             416         143          88           1         184         236
+Mem:             416         131          94           1         190         248
 === end ===
