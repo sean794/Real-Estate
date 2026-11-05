@@ -106,6 +106,17 @@
   .page-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
   .page-btn:hover:not(.active){border-color:var(--blue);color:var(--blue);}
 
+
+  /* 후보 단지 / 추이 */
+  .cand-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;}
+  .cand-filters label{display:flex;flex-direction:column;gap:4px;font-size:.68rem;color:var(--muted);}
+  .cand-filters input,.cand-filters select{width:100%;}
+  .cand-filters input[type=number],.cand-filters input[type=search]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.82rem;outline:none;}
+  .num-up{color:var(--red);} .num-down{color:var(--teal);}
+  .tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:.66rem;background:var(--surface2);border:1px solid var(--border);color:var(--muted);margin-left:4px;}
+  .tag-hi{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red);}
+  .small-note{font-size:.72rem;color:var(--muted);margin-top:8px;line-height:1.5;}
+
   @media(max-width:900px){
     .chart-grid,.two-col{grid-template-columns:1fr;}
     .filter-bar,.kpi-row,.section,.nav-tabs,header{padding-left:16px;padding-right:16px;}
@@ -126,6 +137,8 @@
   <button class="nav-tab" data-page="detail">🔍 구별 상세</button>
   <button class="nav-tab" data-page="jeonse">📈 전세가율</button>
   <button class="nav-tab" data-page="budget">💰 예산 필터</button>
+  <button class="nav-tab" data-page="candidates">🎯 후보 단지</button>
+  <button class="nav-tab" data-page="trends">📉 구별 추이</button>
 </div>
 
 <div id="loading">📡 데이터 불러오는 중...</div>
@@ -275,6 +288,69 @@
     </div>
   </div>
 
+  <!-- ── 6. 후보 단지 ── -->
+  <div class="page" id="page-candidates">
+    <div class="section" style="padding-top:20px">
+      <div class="card">
+        <div class="card-title">🎯 후보 단지 찾기 (단지×전용면적 단위, 직거래 제외)</div>
+        <div class="cand-filters">
+          <label>매매가 상한 (억)<input type="number" id="c-max" value="15" step="0.5" min="1"></label>
+          <label>보유 현금 (억) · 갭 한도<input type="number" id="c-cash" placeholder="비워두면 미적용" step="0.5" min="0"></label>
+          <label>구<select id="c-gu"><option value="">전체</option></select></label>
+          <label>전용 최소 (㎡)<input type="number" id="c-amin" value="49" step="1"></label>
+          <label>전용 최대 (㎡)<input type="number" id="c-amax" value="135" step="1"></label>
+          <label>건축년도 이후<input type="number" id="c-built" placeholder="예: 2000" step="1"></label>
+          <label>최소 전세가율 (%)<input type="number" id="c-rate" placeholder="예: 60" step="1"></label>
+          <label>최소 거래 건수<input type="number" id="c-n" value="2" step="1" min="1"></label>
+          <label>최소 전세 건수 (전세가율·갭 쓸 때)<input type="number" id="c-jn" value="2" step="1" min="0"></label>
+          <label>단지명 검색<input type="search" id="c-q" placeholder="예: 래미안"></label>
+          <label>정렬<select id="c-sort">
+            <option value="rate">전세가율 높은순</option>
+            <option value="gap">갭 작은순</option>
+            <option value="ret12">12개월 상승률순</option>
+            <option value="chg_prev">직전 대비 상승순</option>
+            <option value="date">최근 거래 최신순</option>
+            <option value="price_asc">가격 낮은순</option>
+            <option value="price_desc">가격 높은순</option>
+          </select></label>
+        </div>
+        <div id="c-summary" class="small-note"></div>
+        <div class="table-wrap" style="margin-top:10px"><table class="data-table" id="c-table"></table></div>
+        <div class="small-note">• 갭 = 최근 6개월 매매 중위가 − 최근 4개월 전세 중위 보증금. 전세 거래가 1~2건이면 참고만 하세요(전세 건수 표시).<br>
+        • 12개월 상승률은 과거 데이터가 충분히 쌓인 단지만 표시됩니다. 면적은 전용면적을 정수로 반올림해 묶었습니다. 보유 현금은 이 브라우저에만 저장됩니다.</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="card-title">🔺 최근 30일 신고가 (위 조건 적용 · 보유 데이터 기간 내 최고가 갱신)</div>
+        <div class="table-wrap"><table class="data-table" id="h-table"></table></div>
+        <div class="small-note">• 보유 데이터 기간(월별 이력) 안에서의 신고가입니다. 이력이 늘수록 정확해집니다. 최근 신고 지연으로 일부 거래는 아직 안 보일 수 있어요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. 구별 추이 ── -->
+  <div class="page" id="page-trends">
+    <div class="filter-bar">
+      <select id="t-gu"></select>
+      <span style="font-size:.74rem;color:var(--muted);align-self:center">마지막 2개월은 신고 지연으로 거래량이 적게 보입니다</span>
+    </div>
+    <div class="kpi-row" id="t-kpi"></div>
+    <div class="section">
+      <div class="two-col">
+        <div class="card"><div class="card-title">월별 거래량 (계약일 기준)</div><canvas id="t-vol"></canvas></div>
+        <div class="card"><div class="card-title">평당가: 매매 vs 전세 (만원/평)</div><canvas id="t-ppm"></canvas></div>
+      </div>
+      <div class="card" style="margin-top:13px"><div class="card-title">전세가율 추이 (%)</div><canvas id="t-rate"></canvas></div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="card-title">구별 주간 가격 변동률 (한국부동산원, 전주 대비)</div>
+        <div class="table-wrap"><table class="data-table" id="wg-table"></table></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -316,7 +392,7 @@ async function load() {
     const monthSels = ["month-select", "tx-month-select"];
     monthSels.forEach(id => {
       const sel = document.getElementById(id);
-      S.trade.forEach(d => {
+      (id === "tx-month-select" ? S.trade.slice(-12) : S.trade).forEach(d => {
         const o = document.createElement("option");
         o.value = d.ym; o.textContent = `${d.ym.slice(0,4)}년 ${d.ym.slice(4)}월`;
         sel.appendChild(o);
@@ -348,6 +424,8 @@ document.querySelectorAll(".nav-tab").forEach(btn => {
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("page-"+btn.dataset.page).classList.add("active");
+    if (btn.dataset.page === "candidates") initCandidates();
+    if (btn.dataset.page === "trends") initTrends();
   });
 });
 
@@ -395,6 +473,145 @@ document.getElementById("tx-search")?.addEventListener("input", () => {
 document.getElementById("tx-size-filter")?.addEventListener("change", () => {
   txCurrentPage = 1; applyTxFilter();
 });
+
+
+// ══ 후보 단지 ═══════════════════════════════════════
+let CX = null, HX = null, candReady = false;
+const lsGet = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch(e) {} };
+const fmtEok = v => (v==null||isNaN(v)) ? "–" : (v>=10000 ? (v/10000).toFixed(2).replace(/\.?0+$/,"")+"억" : Math.round(v/1000)+"천");
+const pctHtml = v => v==null ? "–" : `<span class="${v>0?"num-up":v<0?"num-down":""}">${v>0?"+":""}${v}%</span>`;
+
+async function initCandidates() {
+  if (candReady) return;
+  candReady = true;
+  const box = document.getElementById("c-summary");
+  box.textContent = "단지 데이터 불러오는 중...";
+  try {
+    const [c, h] = await Promise.all([fetch("data/complexes.json"), fetch("data/new_highs.json")]);
+    if (!c.ok) throw new Error();
+    CX = (await c.json()).items;
+    HX = h.ok ? (await h.json()).items : [];
+  } catch(e) { box.textContent = "단지 데이터가 아직 없습니다. 서버가 다음에 수집을 돌리면 생깁니다."; return; }
+  const gsel = document.getElementById("c-gu");
+  GU_LIST.forEach(g => { const o=document.createElement("option"); o.value=g; o.textContent=g; gsel.appendChild(o); });
+  const saved = lsGet("cand_cash"); if (saved) document.getElementById("c-cash").value = saved;
+  document.querySelectorAll(".cand-filters input,.cand-filters select").forEach(el => {
+    el.addEventListener("input", () => { if (el.id==="c-cash") lsSet("cand_cash", el.value); renderCandidates(); });
+  });
+  renderCandidates();
+}
+
+function candFilter() {
+  const v = id => document.getElementById(id).value;
+  const max = parseFloat(v("c-max"))*10000 || Infinity;
+  const cash = v("c-cash")!=="" ? parseFloat(v("c-cash"))*10000 : null;
+  const gu = v("c-gu"), amin=parseFloat(v("c-amin"))||0, amax=parseFloat(v("c-amax"))||999;
+  const built = parseInt(v("c-built"))||0, rate = parseFloat(v("c-rate"))||0, n = parseInt(v("c-n"))||1;
+  const q = v("c-q").trim();
+  const jn = parseInt(v("c-jn"))||0, needJ = rate>0 || cash!=null || ["rate","gap"].includes(v("c-sort"));
+  return x => {
+    if (needJ && (x.jn||0) < jn) return false;
+    const price = x.base ?? x.last[0];
+    if (price > max) return false;
+    if (cash!=null && (x.gap==null || x.gap > cash)) return false;
+    if (gu && x.gu!==gu) return false;
+    if (x.a < amin || x.a > amax) return false;
+    if (built && (!x.built || x.built < built)) return false;
+    if (rate && (x.rate==null || x.rate < rate)) return false;
+    if ((x.n||0) < n) return false;
+    if (q && !x.name.includes(q)) return false;
+    return true;
+  };
+}
+
+function renderCandidates() {
+  if (!CX) return;
+  const f = candFilter();
+  let rows = CX.filter(f);
+  const sort = document.getElementById("c-sort").value;
+  const key = {
+    rate: x => -(x.rate ?? -1), gap: x => (x.gap==null ? 1e12 : x.gap), ret12: x => -(x.ret12 ?? -1e6),
+    chg_prev: x => -(x.chg_prev ?? -1e6), date: x => -new Date(x.last[1]).getTime(),
+    price_asc: x => x.base, price_desc: x => -x.base,
+  }[sort];
+  rows.sort((a,b) => key(a)-key(b));
+  document.getElementById("c-summary").textContent = `조건에 맞는 단지·평형 ${rows.length.toLocaleString()}건 (상위 150건 표시)`;
+  const th = "<tr><th>단지</th><th>전용(평)</th><th>최근 거래</th><th>직전 대비</th><th>12개월</th><th>최고가</th><th>전세</th><th>전세가율</th><th>갭</th><th>건축</th><th>거래수</th></tr>";
+  const body = rows.slice(0,150).map(x => `<tr>
+    <td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td>
+    <td>${x.a}㎡ (${x.py}평)</td>
+    <td class="price">${fmtEok(x.last[0])}<span class="tag">${x.last[1].slice(2)}${x.last[2]!=null?` · ${x.last[2]}층`:""}</span></td>
+    <td>${pctHtml(x.chg_prev)}</td><td>${pctHtml(x.ret12)}</td>
+    <td>${fmtEok(x.high[0])}<span class="tag${x.high[0]===x.last[0]?" tag-hi":""}">${x.high[1].slice(2)}</span></td>
+    <td>${x.j?fmtEok(x.j):"–"}<span class="tag">${x.jn}건</span></td>
+    <td><strong>${x.rate!=null?x.rate+"%":"–"}</strong></td>
+    <td>${x.gap!=null?fmtEok(x.gap):"–"}</td>
+    <td>${x.built||"–"}</td><td>${x.n}</td></tr>`).join("");
+  document.getElementById("c-table").innerHTML = th + (body || `<tr><td colspan="11" class="empty">조건에 맞는 단지가 없어요</td></tr>`);
+  renderHighs(f);
+}
+
+function renderHighs(f) {
+  // 신고가 목록은 가격/구/면적/단지명 조건만 적용
+  const v = id => document.getElementById(id).value;
+  const max = parseFloat(v("c-max"))*10000 || Infinity, gu=v("c-gu"), amin=parseFloat(v("c-amin"))||0, amax=parseFloat(v("c-amax"))||999, q=v("c-q").trim();
+  const list = (HX||[]).filter(x => x.price<=max && (!gu||x.gu===gu) && x.a>=amin && x.a<=amax && (!q||x.name.includes(q))).slice(0,60);
+  const th = "<tr><th>단지</th><th>전용</th><th>거래일</th><th>신고가</th><th>직전 최고가</th><th>상승</th><th>층</th></tr>";
+  const body = list.map(x => `<tr><td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td><td>${x.a}㎡</td><td>${x.date.slice(5)}</td>
+    <td class="price">${fmtEok(x.price)}</td><td>${fmtEok(x.prev_high)}</td><td>${pctHtml(x.jump)}</td><td>${x.floor??"–"}</td></tr>`).join("");
+  document.getElementById("h-table").innerHTML = th + (body || `<tr><td colspan="7" class="empty">최근 30일 신고가 없음</td></tr>`);
+}
+
+// ══ 구별 추이 ═══════════════════════════════════════
+let TX = null, trendReady = false;
+async function initTrends() {
+  if (trendReady) { renderTrends(); return; }
+  trendReady = true;
+  try {
+    const r = await fetch("data/gu_trends.json");
+    if (!r.ok) throw new Error();
+    TX = await r.json();
+  } catch(e) { document.getElementById("t-kpi").innerHTML = `<div class="empty">추이 데이터가 아직 없습니다.</div>`; return; }
+  const sel = document.getElementById("t-gu");
+  ["서울 전체", ...GU_LIST].forEach(g => { const o=document.createElement("option"); o.value=g; o.textContent=g; sel.appendChild(o); });
+  sel.addEventListener("change", renderTrends);
+  renderWeeklyGu();
+  renderTrends();
+}
+
+function renderTrends() {
+  if (!TX) return;
+  const gu = document.getElementById("t-gu").value || "서울 전체";
+  const d = TX.gu[gu]; if (!d) return;
+  const labels = TX.months.map(m => m.slice(2,4)+"."+m.slice(4));
+  const pyOf = a => a.map(v => v==null ? null : Math.round(v*3.3058));
+  const partialIdx = Math.max(0, TX.months.indexOf(TX.partial_from));
+  const volColors = TX.months.map((_,i) => i>=partialIdx ? "rgba(59,124,244,.35)" : "rgba(59,124,244,.9)");
+  const lastFull = Math.max(0, partialIdx-1);
+  const last = k => { for (let i=d[k].length-1;i>=0;i--) if (d[k][i]!=null) return d[k][i]; return null; };
+  document.getElementById("t-kpi").innerHTML =
+    kpi("최근 확정 월 거래량", (d.vol[lastFull]||0).toLocaleString()+"건", TX.months[lastFull], "") +
+    kpi("평당 매매가", (pyOf([last("ppm")])[0]||"–").toLocaleString()+"만", "", "") +
+    kpi("평당 전세가", (pyOf([last("jppm")])[0]||"–").toLocaleString()+"만", "", "") +
+    kpi("전세가율", (last("rate")??"–")+"%", "구 중위값 기준", "");
+  destroy("t-vol"); destroy("t-ppm"); destroy("t-rate");
+  charts["t-vol"] = new Chart(document.getElementById("t-vol"), {type:"bar", data:{labels, datasets:[{data:d.vol, backgroundColor:volColors, borderRadius:4}]}, options:cOpts("건")});
+  charts["t-ppm"] = new Chart(document.getElementById("t-ppm"), {type:"line", data:{labels, datasets:[
+    {label:"매매", data:pyOf(d.ppm), borderColor:"#f59e0b", tension:.3, spanGaps:true},
+    {label:"전세", data:pyOf(d.jppm), borderColor:"#14b8a6", tension:.3, spanGaps:true}]},
+    options:{...cOpts("만원/평"), plugins:{...cOpts("").plugins, legend:{display:true, labels:{color:"#94a3b8"}}}}});
+  charts["t-rate"] = new Chart(document.getElementById("t-rate"), {type:"line", data:{labels, datasets:[{data:d.rate, borderColor:"#a855f7", tension:.3, spanGaps:true, fill:false}]}, options:cOpts("%")});
+}
+
+function renderWeeklyGu() {
+  const rows = S.weekly_gu || [];
+  const el = document.getElementById("wg-table");
+  if (!rows.length) { el.innerHTML = `<tr><td class="empty">구별 주간 데이터 없음</td></tr>`; return; }
+  const sorted = [...rows].sort((a,b) => (b.매매변동률??-9)-(a.매매변동률??-9));
+  el.innerHTML = `<tr><th>순위</th><th>구</th><th>매매 변동률</th><th>전세 변동률</th><th>기준일</th></tr>` +
+    sorted.map((r,i) => `<tr><td>${i+1}</td><td><strong>${r.구}</strong></td><td>${pctHtml(r.매매변동률)}</td><td>${pctHtml(r.전세변동률)}</td><td>${r.기준일}</td></tr>`).join("");
+}
 
 // ── 유틸 ─────────────────────────────────────────────
 function fmtWon(v) {

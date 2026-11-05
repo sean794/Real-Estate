@@ -3,7 +3,7 @@
 v6: 전일 거래 요약 + 주간 가격동향 추가
 """
 
-import os, math, json, requests
+import os, math, json, time, requests
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -32,10 +32,49 @@ REB_BASE_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do"
 def get_ym_list(months_back=3):
     return [(datetime.today()-timedelta(days=30*i)).strftime("%Y%m") for i in range(months_back)]
 
-def fetch_xml(url, params):
-    res = requests.get(url, params=params, timeout=15)
-    res.raise_for_status()
-    return ET.fromstring(res.content)
+class QuotaExceeded(Exception):
+    pass
+
+def fetch_xml(url, params, retries=3):
+    """XML 응답 1회 호출 (재시도 + 일일 호출한도 감지)"""
+    last = None
+    for i in range(retries):
+        try:
+            res = requests.get(url, params=params, timeout=30)
+            res.raise_for_status()
+            root = ET.fromstring(res.content)
+            if root.tag == "OpenAPI_ServiceResponse":      # 게이트웨이 오류 형식
+                reason = (root.findtext(".//returnReasonCode") or "").strip()
+                msg = root.findtext(".//returnAuthMsg") or root.findtext(".//errMsg") or ""
+                if reason == "22" or "LIMITED" in msg.upper():
+                    raise QuotaExceeded(msg)
+                raise RuntimeError(f"gateway {reason} {msg}")
+            code = (root.findtext(".//resultCode") or "").strip()
+            if code not in ("", "00", "000"):
+                msg = root.findtext(".//resultMsg") or ""
+                if code == "22" or "LIMIT" in msg.upper():
+                    raise QuotaExceeded(msg)
+                raise RuntimeError(f"resultCode {code} {msg}")
+            return root
+        except QuotaExceeded:
+            raise
+        except Exception as e:
+            last = e
+            time.sleep(1.5 * (i + 1))
+    raise last
+
+def fetch_paged(url, base_params, parser, gu_name):
+    """totalCount 기준으로 모든 페이지 수집 (1000건 초과 구 대응)"""
+    records, page = [], 1
+    while True:
+        root = fetch_xml(url, {**base_params, "pageNo": page, "numOfRows": 1000})
+        recs = parser(root, gu_name)
+        records.extend(recs)
+        total = int(root.findtext(".//totalCount") or 0)
+        if not recs or len(records) >= total or page >= 20:
+            break
+        page += 1
+    return records
 
 def parse_trade(root, gu_name):
     records = []
@@ -70,29 +109,37 @@ def parse_rent(root, gu_name):
     return records
 
 def fetch_all(gu_name, gu_code, ym):
-    trade_params = {"serviceKey":TRADE_API_KEY,"LAWD_CD":gu_code,"DEAL_YMD":ym,"numOfRows":1000}
-    rent_params  = {"serviceKey":RENT_API_KEY, "LAWD_CD":gu_code,"DEAL_YMD":ym,"numOfRows":1000}
+    """(매매, 전월세, 성공여부). 호출한도 초과는 QuotaExceeded 로 그대로 올림"""
+    ok = True
+    t, r = [], []
     try:
-        t = parse_trade(fetch_xml(BASE_TRADE_URL, trade_params), gu_name)
+        t = fetch_paged(BASE_TRADE_URL, {"serviceKey":TRADE_API_KEY,"LAWD_CD":gu_code,"DEAL_YMD":ym}, parse_trade, gu_name)
         print(f"  [매매] {gu_name} {ym}: {len(t)}건")
+    except QuotaExceeded:
+        raise
     except Exception as e:
-        print(f"  [매매 오류] {gu_name} {ym}: {e}"); t=[]
+        ok = False; print(f"  [매매 오류] {gu_name} {ym}: {e}")
     try:
-        r = parse_rent(fetch_xml(BASE_RENT_URL, rent_params), gu_name)
+        r = fetch_paged(BASE_RENT_URL, {"serviceKey":RENT_API_KEY,"LAWD_CD":gu_code,"DEAL_YMD":ym}, parse_rent, gu_name)
         print(f"  [전월세] {gu_name} {ym}: {len(r)}건")
+    except QuotaExceeded:
+        raise
     except Exception as e:
-        print(f"  [전월세 오류] {gu_name} {ym}: {e}"); r=[]
-    return t, r
+        ok = False; print(f"  [전월세 오류] {gu_name} {ym}: {e}")
+    return t, r, ok
+
+DOCS_MONTHS = 12   # 브라우저(거래내역 탭)용 복사본은 최근 12개월만
 
 def save_csv(records, path):
     if not records: return
     df = pd.DataFrame(records)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8-sig")
-    # GitHub Pages용 복사
-    docs_path = Path("docs") / path
-    docs_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(docs_path, index=False, encoding="utf-8-sig")
+    cutoff = (datetime.today() - timedelta(days=31 * DOCS_MONTHS)).strftime("%Y%m")
+    if path.stem >= cutoff:
+        docs_path = Path("docs") / path
+        docs_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(docs_path, index=False, encoding="utf-8-sig")
     print(f"  저장: {path} ({len(df)}행)")
 
 def clean_nan(obj):
@@ -123,14 +170,16 @@ def _iso_week_ids(n=10):
     return out[::-1]
 
 def fetch_weekly_price():
-    """한국부동산원 R-ONE 주간 서울 매매/전세 가격지수 + 전주 대비 변동률"""
+    """R-ONE 주간 서울 매매/전세 가격지수(+전주 대비 변동률) 및 25개 구별 최근 변동률.
+    반환: (서울 시계열 list, 구별 list)"""
     if not REB_API_KEY:
         print("  REB_API_KEY 없음, 주간 시세 건너뜀")
-        return []
+        return [], []
 
-    result = []
+    result, gu_vals = [], {}
     for kind, statbl_id in REB_WEEKLY_TABLES.items():
         series = []
+        gu_week = {}   # 기준일 -> {구: 지수}
         for wid in _iso_week_ids(10):
             try:
                 res = requests.get(REB_BASE_URL, params={
@@ -143,9 +192,14 @@ def fetch_weekly_price():
                 continue
             rows = body[1].get("row", []) if len(body) >= 2 else []
             for r in rows:
-                if r.get("CLS_FULLNM") == "서울" and r.get("DTA_VAL") is not None:
-                    series.append((r.get("WRTTIME_DESC", ""), float(r["DTA_VAL"])))
-                    break
+                full, v = r.get("CLS_FULLNM") or "", r.get("DTA_VAL")
+                if v is None: continue
+                day = (r.get("WRTTIME_DESC") or "").replace("-", "")
+                if full == "서울":
+                    series.append((r.get("WRTTIME_DESC", ""), float(v)))
+                parts = full.split(">")
+                if len(parts) == 4 and parts[0] == "서울" and parts[3].endswith("구"):
+                    gu_week.setdefault(day, {})[parts[3]] = float(v)
         series.sort()
         print(f"  주간 {kind}지수 서울: {len(series)}주 수집")
         for i, (day, val) in enumerate(series):
@@ -155,7 +209,22 @@ def fetch_weekly_price():
                 "지수": round(val, 3),
                 "변동률": round((val/prev - 1) * 100, 3) if prev else 0.0,
             })
-    return result
+        days = sorted(gu_week)
+        if len(days) >= 2:
+            cur, prv = gu_week[days[-1]], gu_week[days[-2]]
+            gu_vals[kind] = (days[-1], {g: round((v/prv[g]-1)*100, 3) for g, v in cur.items() if g in prv and prv[g]})
+
+    gu_rows = []
+    for gu in SEOUL_GU_CODES:
+        row = {"구": gu}
+        for kind in ("매매", "전세"):
+            if kind in gu_vals:
+                row["기준일"] = gu_vals[kind][0]
+                row[f"{kind}변동률"] = gu_vals[kind][1].get(gu)
+        if "매매변동률" in row or "전세변동률" in row:
+            gu_rows.append(row)
+    print(f"  구별 주간 변동률: {len(gu_rows)}개 구")
+    return result, gu_rows
 
 def make_daily_recap(trade_dir, rent_dir, days=7):
     """최근 N일(전일까지) 계약 거래 요약. 신고 지연 때문에 하루 단위는 건수가 너무 적어 7일 창으로 집계."""
@@ -204,7 +273,7 @@ def make_daily_recap(trade_dir, rent_dir, days=7):
     return recap
 
 def build_summary(trade_dir, rent_dir, out_path):
-    summary = {"trade":[],"rent":[],"jeonse_rate":[],"weekly_price":[],"daily_recap":{},"updated":datetime.today().strftime("%Y-%m-%d")}
+    summary = {"trade":[],"rent":[],"jeonse_rate":[],"weekly_price":[],"weekly_gu":[],"daily_recap":{},"updated":datetime.today().strftime("%Y-%m-%d")}
 
     # 매매 요약
     for f in sorted(trade_dir.glob("*.csv")):
@@ -296,7 +365,7 @@ def build_summary(trade_dir, rent_dir, out_path):
         summary["jeonse_rate"] = sorted(result, key=lambda x:x["전세가율"], reverse=True)
 
     # 주간 시세
-    summary["weekly_price"] = fetch_weekly_price()
+    summary["weekly_price"], summary["weekly_gu"] = fetch_weekly_price()
 
     # 전일 거래 요약
     summary["daily_recap"] = make_daily_recap(trade_dir, rent_dir)
@@ -313,10 +382,17 @@ def main():
     trade_dir = Path("data/apt_trade")
     rent_dir  = Path("data/apt_rent")
     for ym in ym_list:
-        trade_all, rent_all = [], []
-        for gu_name, gu_code in SEOUL_GU_CODES.items():
-            t,r = fetch_all(gu_name, gu_code, ym)
-            trade_all.extend(t); rent_all.extend(r)
+        trade_all, rent_all, month_ok = [], [], True
+        try:
+            for gu_name, gu_code in SEOUL_GU_CODES.items():
+                t, r, ok = fetch_all(gu_name, gu_code, ym)
+                trade_all.extend(t); rent_all.extend(r); month_ok &= ok
+        except QuotaExceeded as e:
+            print(f"  ⚠ 일일 호출한도 초과({e}) — {ym} 이후 수집 중단, 기존 파일 유지")
+            break
+        if not month_ok and (trade_dir/f"{ym}.csv").exists():
+            print(f"  ⚠ {ym}: 일부 구 수집 실패 — 기존 CSV 유지(덮어쓰지 않음)")
+            continue
         save_csv(trade_all, trade_dir/f"{ym}.csv")
         save_csv(rent_all,  rent_dir/f"{ym}.csv")
     build_summary(trade_dir, rent_dir, Path("docs/data/summary.json"))

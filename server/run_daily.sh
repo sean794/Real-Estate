@@ -11,6 +11,11 @@ TMP=$(mktemp)
   git pull --rebase --autostash -q 2>&1 || echo "[WARN] git pull 실패"
   python3 scripts/fetch_data.py 2>&1 | tail -n 200
   echo "exit: ${PIPESTATUS[0]}"
+  echo "--- 백필 ---"
+  python3 scripts/backfill.py --months 36 --max-calls 1200 2>&1 | tail -n 15
+  echo "--- 분석 ---"
+  python3 scripts/build_analytics.py 2>&1 | tail -n 10
+  echo "analytics exit: ${PIPESTATUS[0]}"
   free -m | sed -n '1,2p'
   echo "=== end ==="
 } > "$TMP" 2>&1
