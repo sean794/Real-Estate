@@ -18,7 +18,7 @@ TMP=$(mktemp)
   echo "analytics exit: ${PIPESTATUS[0]}"
   free -m | sed -n '1,2p'
   echo "=== end ==="
-} > "$TMP" 2>&1
+} 2>&1 | tee "$HOME/run_daily.live.log" > "$TMP"
 
 mkdir -p logs
 cp "$TMP" logs/last_run.log; rm -f "$TMP"
