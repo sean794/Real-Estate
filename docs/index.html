@@ -435,10 +435,14 @@ async function load() {
         o.value = d.ym; o.textContent = `${d.ym.slice(0,4)}년 ${d.ym.slice(4)}월`;
         sel.appendChild(o);
       });
-      sel.value = S.trade[S.trade.length-1].ym;
     });
-    currentMonth = S.trade[S.trade.length-1].ym;
-    txCurrentMonth = S.trade[S.trade.length-1].ym;
+    // 기본 월: 거래 수가 직전 달의 절반 이상 모인 가장 최근 달 (집계 중인 달 제외)
+    let defI = S.trade.length-1;
+    while (defI>0 && (S.trade[defI].거래수||0) < 0.5*(S.trade[defI-1].거래수||0)) defI--;
+    const defYm = S.trade[defI].ym;
+    monthSels.forEach(id => { document.getElementById(id).value = defYm; });
+    currentMonth = defYm;
+    txCurrentMonth = defYm;
 
     // 구 버튼 생성
     const guGrid = document.getElementById("gu-grid");
