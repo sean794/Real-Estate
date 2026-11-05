@@ -160,6 +160,10 @@
   .bar,.bar-fill{height:4px;}
   header,.nav-tabs{max-width:none;padding-left:max(32px,calc((100vw - 1280px)/2 + 32px));padding-right:32px;}
   .filter-bar{padding-left:32px;padding-right:32px;}
+  .wk-wrap{display:grid;grid-template-columns:260px minmax(0,520px);gap:28px;align-items:start;}
+  .wk-stats{flex-direction:column;gap:10px;margin:0;}
+  .chart-box.xs{height:120px;}
+  @media(max-width:900px){.wk-wrap{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -760,14 +764,14 @@ function renderWeeklyPrice() {
   const chgColor = chg > 0 ? "var(--red)" : chg < 0 ? "var(--teal)" : "var(--muted)";
   const chgIcon  = chg > 0 ? "▲" : chg < 0 ? "▼" : "–";
 
-  let html = `<div class="stat-bar" style="margin-bottom:14px">
+  let html = `<div class="wk-wrap"><div class="stat-bar wk-stats">
     <div class="stat-item"><span>기준</span><strong>${latest?.기준일||"–"}</strong></div>
     <div class="stat-item"><span>서울 주간 변동률</span><strong style="color:${chgColor}">${chgIcon} ${Math.abs(chg||0)}%</strong></div>
     <div class="stat-item"><span>매매지수</span><strong>${latest?.지수||"–"}</strong></div>
     ${jLatest?`<div class="stat-item"><span>서울 전세 변동률</span><strong style="color:${jLatest.변동률>0?"var(--red)":jLatest.변동률<0?"var(--teal)":"var(--muted)"}">${jLatest.변동률>0?"▲":jLatest.변동률<0?"▼":"–"} ${Math.abs(jLatest.변동률).toFixed(2)}%</strong></div>`:""}
   </div>`;
 
-  html += `<div class="legend"><span><i style="background:var(--s1)"></i>매매</span><span><i style="background:var(--s2)"></i>전세</span></div><div class="chart-box sm"><canvas id="wk-chart"></canvas></div>`;
+  html += `<div class="wk-chart"><div class="legend"><span><i style="background:var(--s1)"></i>매매</span><span><i style="background:var(--s2)"></i>전세</span><span style="margin-left:auto">주간 변동률 (%)</span></div><div class="chart-box xs"><canvas id="wk-chart"></canvas></div></div></div>`;
   el.innerHTML = html;
   const wl=recent.map(d=>(d.기준일||"").slice(4,6)+"."+(d.기준일||"").slice(6,8));
   const jmap={}; jeonse.forEach(d=>jmap[d.기준일]=d.변동률);
