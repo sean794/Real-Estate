@@ -13,14 +13,14 @@ sudo dpkg --configure -a || true
 python3 -c "import pandas, requests" 2>/dev/null || sudo apt-get install -y --no-install-recommends python3-pandas python3-requests
 
 if [ ! -d "$REPO_DIR/.git" ]; then
-  read -rsp "GitHub 토큰(sean794/Real-Estate contents:write): " TOKEN; echo
+  read -rsp "GitHub 토큰(sean794/Real-Estate contents:write): " TOKEN </dev/tty; echo
   git clone "https://sean794:${TOKEN}@github.com/sean794/Real-Estate.git" "$REPO_DIR"
 fi
 
 if [ ! -f "$HOME/.realestate.env" ]; then
-  read -rsp "MOLIT_TRADE_API_KEY: " A; echo
-  read -rsp "MOLIT_RENT_API_KEY: " B; echo
-  read -rsp "REB_API_KEY(없으면 엔터): " C; echo
+  read -rsp "MOLIT_TRADE_API_KEY: " A </dev/tty; echo
+  read -rsp "MOLIT_RENT_API_KEY: " B </dev/tty; echo
+  read -rsp "REB_API_KEY(없으면 엔터): " C </dev/tty; echo
   printf 'MOLIT_TRADE_API_KEY=%s\nMOLIT_RENT_API_KEY=%s\nREB_API_KEY=%s\n' "$A" "$B" "$C" > "$HOME/.realestate.env"
   chmod 600 "$HOME/.realestate.env"
 fi
