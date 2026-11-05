@@ -164,6 +164,31 @@
   .wk-stats{flex-direction:column;gap:10px;margin:0;}
   .chart-box.xs{height:120px;}
   @media(max-width:900px){.wk-wrap{grid-template-columns:1fr;}}
+  @media(max-width:900px){
+    html,body{overflow-x:hidden;}
+    header,.nav-tabs{padding-left:16px;padding-right:16px;}
+    header{padding-top:18px;}
+    .nav-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .nav-tabs::-webkit-scrollbar{display:none;}
+    .nav-tab{flex:0 0 auto;white-space:nowrap;padding:11px 13px;font-size:.88rem;}
+    .chart-grid,.two-col,.wk-wrap{grid-template-columns:1fr;}
+    .filter-bar,.kpi-row,.section{padding-left:16px;padding-right:16px;}
+    .kpi-row{grid-template-columns:1fr 1fr;gap:10px;}
+    .kpi-card{padding:12px;}
+    .kpi-value{font-size:1.15rem;}
+    .card{padding:14px;}
+    .chart-box{height:220px;}
+    .stat-bar{gap:8px 16px;padding:10px 12px;}
+    .wk-stats{width:100%;}
+    .table-wrap{max-height:70vh;}
+    .data-table td:first-child,.data-table th:first-child{position:sticky;left:0;background:var(--surface);z-index:1;}
+    .budget-input{width:100%;}
+    .cand-filters{grid-template-columns:1fr 1fr;}
+    #loading{padding:40px 16px;}
+    .data-table td:first-child{white-space:normal;min-width:120px;max-width:150px;}
+    .data-table td:first-child .tag{display:block;margin:3px 0 0;width:fit-content;}
+    .data-table td,.data-table th{padding:8px 7px;}
+  }
 </style>
 </head>
 <body>
@@ -183,7 +208,7 @@
   <button class="nav-tab" data-page="trends">구별 추이</button>
 </div>
 
-<div id="loading">📡 데이터 불러오는 중...</div>
+<div id="loading">데이터 불러오는 중...</div>
 <div id="main-content" style="display:none">
 
   <!-- ── 1. 시장 개요 ── -->
@@ -196,15 +221,15 @@
     </div>
 
     <!-- 전일 거래 요약 -->
-    <div style="padding:16px 40px 0">
+    <div class="section" style="padding-top:16px;padding-bottom:0">
       <div class="section-title">전일 거래 요약</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="two-col" style="margin-bottom:16px">
         <div class="card" id="daily-trade-card">
-          <div class="card-title">🏠 전일 매매 거래</div>
+          <div class="card-title">전일 매매 거래</div>
           <div id="daily-trade-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
         </div>
         <div class="card" id="daily-rent-card">
-          <div class="card-title">📋 전일 전월세 거래</div>
+          <div class="card-title">전일 전월세 거래</div>
           <div id="daily-rent-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
         </div>
       </div>
@@ -233,7 +258,7 @@
         <button class="tab-btn" data-txtype="rent">전월세</button>
       </div>
       <select id="tx-month-select"></select>
-      <input type="text" id="tx-search" placeholder="🔍 아파트명 검색"/>
+      <input type="text" id="tx-search" placeholder="아파트명 검색"/>
       <select id="tx-size-filter">
         <option value="all">면적 전체</option>
         <option value="60">~60㎡</option>
@@ -243,7 +268,7 @@
       </select>
     </div>
 
-    <div style="padding:16px 40px 0">
+    <div class="section" style="padding-top:16px;padding-bottom:0">
       <!-- 구 선택 -->
       <div class="section-title">자치구 선택</div>
       <div class="gu-grid" id="gu-grid"></div>
@@ -274,7 +299,7 @@
     </div>
     <div class="kpi-row" id="kpi-detail"></div>
     <div class="section">
-      <div class="info-box">💡 이상치(IQR 기준) 제거 후 중위값 기준이에요.</div>
+      <div class="info-box">이상치(IQR 기준) 제거 후 중위값 기준이에요.</div>
       <div class="section-title">전체 구별 순위</div>
       <div class="card" style="margin-bottom:13px">
         <table class="data-table" id="gu-rank-table"></table>
@@ -300,7 +325,7 @@
   <div class="page" id="page-jeonse">
     <div class="kpi-row" id="kpi-jeonse"></div>
     <div class="section">
-      <div class="info-box">💡 <strong>전세가율</strong> = 전세가 ÷ 매매가 × 100. 70% 이상이면 매수 고려 신호예요.</div>
+      <div class="info-box"><strong>전세가율</strong> = 전세가 ÷ 매매가 × 100. 70% 이상이면 매수 고려 신호예요.</div>
       <div class="card"><table class="data-table" id="jeonse-table"></table></div>
     </div>
   </div>
@@ -309,7 +334,7 @@
   <div class="page" id="page-budget">
     <div class="section" style="padding-top:20px">
       <div class="card">
-        <div class="card-title">💰 내 예산으로 살 수 있는 구</div>
+        <div class="card-title">내 예산으로 살 수 있는 구</div>
         <div class="budget-inputs">
           <span style="font-size:.82rem;color:var(--muted)">예산</span>
           <input class="budget-input" id="b-min" type="number" placeholder="최소 (만원)" step="1000"/>
@@ -323,7 +348,7 @@
             <option value="중형 (60~85㎡)">중형 (60~85㎡)</option>
             <option value="대형 (85㎡~)">대형 (85㎡~)</option>
           </select>
-          <button class="budget-btn" onclick="runBudget()">🔍 검색</button>
+          <button class="budget-btn" onclick="runBudget()">검색</button>
         </div>
         <div id="budget-results"><div class="empty">예산을 입력하고 검색해보세요!</div></div>
       </div>
@@ -334,7 +359,7 @@
   <div class="page" id="page-candidates">
     <div class="section" style="padding-top:20px">
       <div class="card">
-        <div class="card-title">🎯 후보 단지 찾기 (단지×전용면적 단위, 직거래 제외)</div>
+        <div class="card-title">후보 단지 찾기 (단지×전용면적 단위, 직거래 제외)</div>
         <div class="cand-filters">
           <label>매매가 상한 (억)<input type="number" id="c-max" value="15" step="0.5" min="1"></label>
           <label>보유 현금 (억) · 갭 한도<input type="number" id="c-cash" placeholder="비워두면 미적용" step="0.5" min="0"></label>
@@ -364,7 +389,7 @@
     </div>
     <div class="section">
       <div class="card">
-        <div class="card-title">🔺 최근 30일 신고가 (위 조건 적용 · 보유 데이터 기간 내 최고가 갱신)</div>
+        <div class="card-title">최근 30일 신고가 (위 조건 적용 · 보유 데이터 기간 내 최고가 갱신)</div>
         <div class="table-wrap"><table class="data-table" id="h-table"></table></div>
         <div class="small-note">• 보유 데이터 기간(월별 이력) 안에서의 신고가입니다. 이력이 늘수록 정확해집니다. 최근 신고 지연으로 일부 거래는 아직 안 보일 수 있어요.</div>
       </div>
@@ -697,7 +722,7 @@ function cOpts(unit, o={}) {
       tooltip:{backgroundColor:cv("--surface2"),borderColor:grid,borderWidth:1,titleColor:cv("--text"),bodyColor:cv("--text"),padding:10,boxPadding:4,
         callbacks:{label:ctx=>` ${ctx.dataset.label?ctx.dataset.label+"  ":""}${ctx.parsed.y==null?"–":ctx.parsed.y.toLocaleString(undefined,{maximumFractionDigits:2})} ${unit}`}}},
     scales:{
-      x:{grid:{display:false},border:{color:grid},ticks:{color:muted,font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:o.xTicks||8}},
+      x:{grid:{display:false},border:{color:grid},ticks:{color:muted,font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:window.innerWidth<600?4:(o.xTicks||8)}},
       y:{grid:{color:grid,lineWidth:1},border:{display:false},beginAtZero:!!o.zero,ticks:{color:muted,font:{size:11},maxTicksLimit:5,padding:6,callback:v=>v.toLocaleString()}}}
   };
 }
@@ -1093,7 +1118,7 @@ function runBudget() {
   if (!results.length) { el.innerHTML=`<div class="empty">해당 예산 범위 거래 없음. 범위를 조정해보세요!</div>`; return; }
   el.innerHTML = results.slice(0,12).map(r=>`
     <div class="budget-card">
-      <div class="budget-gu">📍 ${r.구}</div>
+      <div class="budget-gu">${r.구}</div>
       <div class="budget-price">중위가 ${fmtWon(r.가격)}</div>
       <div class="budget-detail">${r.거래수}건 · ${r.면적}</div>
     </div>`).join("");
