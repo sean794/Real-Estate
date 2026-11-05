@@ -1,0 +1,36 @@
+=== job 'status' (id 1793864215) start 2026-11-05 07:40:01 UTC ===
+Thu Nov  5 07:40:01 UTC 2026
+
+               total        used        free      shared  buff/cache   available
+Mem:             416         122          75           1         218         257
+Swap:           1023          73         950
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        20G  5.7G   14G  30% /
+
+--- cron ---
+CRON_TZ=Asia/Seoul
+30 0 * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh
+*/5 * * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/poll.sh
+
+--- 실행 중 ---
+
+--- 데이터 ---
+매매 월 파일: 32개 (202404.csv ~ 202611.csv)
+전월세 월 파일: 32개
+백필 임시파일: 0
+
+--- 마지막 수집 로그 끝 ---
+  ✔ 202404 백필 완료 (누적 호출 1200)
+  ⏸ 호출 한도 도달(자체 호출 상한) — 오늘은 여기까지, 다음 실행에서 이어서 진행
+백필 이번 실행: 24개월 완료, 호출 1200회, 남은 4개월
+--- 분석 ---
+  complexes.json: 2778KB
+  new_highs.json: 46KB
+  gu_trends.json: 19KB
+단지×면적 11643건, 신고가 536건, 구 25개 × 32개월
+analytics exit: 0
+               total        used        free      shared  buff/cache   available
+Mem:             416         128         163           1         125         251
+=== end ===
+=== end 2026-11-05 07:40:01 UTC ===
