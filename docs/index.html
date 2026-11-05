@@ -187,24 +187,13 @@
     .stat-bar{gap:8px 16px;padding:10px 12px;}
     .wk-stats{width:100%;}
     .table-wrap{max-height:70vh;}
+    .data-table td:first-child,.data-table th:first-child{position:sticky;left:0;background:var(--surface);z-index:1;}
     .budget-input{width:100%;}
     .cand-filters{grid-template-columns:1fr 1fr;}
     #loading{padding:40px 16px;}
-    .table-wrap{overflow:visible;max-height:none;border:none;}
-    .data-table,.data-table tbody{display:block;width:100%;}
-    .data-table tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:12px 2px;border-bottom:1px solid var(--border);}
-    .data-table tr:has(th){display:none;}
-    .data-table tr:hover td{background:transparent;}
-    .data-table td{display:block;padding:0;border:none;white-space:normal;min-width:0;font-size:.85rem;}
-    .data-table td::before{content:attr(data-label);display:block;font-size:.68rem;color:var(--muted);margin-bottom:1px;}
-    .data-table td[data-label="순위"]{display:none;}
-    .data-table td[data-label="단지"],.data-table td[data-label="자치구"],.data-table td[data-label="구"],.data-table td.empty{grid-column:1/-1;}
-    .data-table td[data-label="단지"]::before,.data-table td[data-label="자치구"]::before,.data-table td[data-label="구"]::before,.data-table td.empty::before{display:none;}
-    .data-table td[data-label="단지"],.data-table td[data-label="자치구"],.data-table td[data-label="구"]{font-size:.95rem;}
-    #c-table tr{grid-template-columns:1fr 1fr 1fr;}
-    #c-table td{font-size:.8rem;}
-    .wk-wrap>*{min-width:0;max-width:100%;}
-    .card,.stat-bar,.info-box{max-width:100%;}
+    .data-table td:first-child{white-space:normal;min-width:120px;max-width:150px;}
+    .data-table td:first-child .tag{display:block;margin:3px 0 0;width:fit-content;}
+    .data-table td,.data-table th{padding:8px 7px;}
   }
 </style>
 </head>
@@ -638,11 +627,10 @@ function renderCandidates() {
       if (va==null && vb==null) return 0; if (va==null) return 1; if (vb==null) return -1;
       return (typeof va==="string" ? va.localeCompare(vb,"ko") : va-vb) * d; });
   } else rows.sort((a,b) => key(a)-key(b));
-  document.getElementById("c-summary").textContent = `조건에 맞는 단지·평형 ${rows.length.toLocaleString()}건 (상위 ${Math.min(rows.length, window.innerWidth<900 ? 40 : 150)}건 표시)`;
-  const LIM = window.innerWidth<900 ? 40 : 150;
+  document.getElementById("c-summary").textContent = `조건에 맞는 단지·평형 ${rows.length.toLocaleString()}건 (상위 150건 표시)`;
   const heads=[["name","단지"],["a","전용(평)"],["last","최근 거래"],["chg","직전 대비"],["ret","12개월"],["high","최고가"],["j","전세"],["rate","전세가율"],["gap","갭"],["built","건축"],["n","거래수"]];
   const th = "<tr>"+heads.map(([k,l])=>`<th data-k="${k}" class="${candCol&&candCol.k===k?"sort-"+candCol.dir:""}">${l}</th>`).join("")+"</tr>";
-  const body = rows.slice(0,LIM).map(x => `<tr>
+  const body = rows.slice(0,150).map(x => `<tr>
     <td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td>
     <td>${x.a}㎡ (${x.py}평)</td>
     <td class="price">${fmtEok(x.last[0])}<span class="tag">${x.last[1].slice(2)}${x.last[2]!=null?` · ${x.last[2]}층`:""}</span></td>
@@ -660,7 +648,7 @@ function renderHighs(f) {
   // 신고가 목록은 가격/구/면적/단지명 조건만 적용
   const v = id => document.getElementById(id).value;
   const max = parseFloat(v("c-max"))*10000 || Infinity, gu=v("c-gu"), amin=parseFloat(v("c-amin"))||0, amax=parseFloat(v("c-amax"))||999, q=v("c-q").trim();
-  const list = (HX||[]).filter(x => x.price<=max && (!gu||x.gu===gu) && x.a>=amin && x.a<=amax && (!q||x.name.includes(q))).slice(0, window.innerWidth<900 ? 20 : 60);
+  const list = (HX||[]).filter(x => x.price<=max && (!gu||x.gu===gu) && x.a>=amin && x.a<=amax && (!q||x.name.includes(q))).slice(0,60);
   const th = "<tr><th>단지</th><th>전용</th><th>거래일</th><th>신고가</th><th>직전 최고가</th><th>상승</th><th>층</th></tr>";
   const body = list.map(x => `<tr><td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td><td>${x.a}㎡</td><td>${x.date.slice(5)}</td>
     <td class="price">${fmtEok(x.price)}</td><td>${fmtEok(x.prev_high)}</td><td>${pctHtml(x.jump)}</td><td>${x.floor??"–"}</td></tr>`).join("");
@@ -729,17 +717,6 @@ function fmtWon(v) {
   return Math.round(v/1000)+"천만";
 }
 function destroy(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
-
-// 모바일 카드형 표: 헤더 글자를 각 셀의 data-label로 복사
-let _lbl=0;
-function labelTables(){
-  document.querySelectorAll(".data-table").forEach(t=>{
-    const hr=[...t.querySelectorAll("tr")].find(r=>r.querySelector("th")); if(!hr) return;
-    const labs=[...hr.children].map(c=>c.textContent.trim());
-    t.querySelectorAll("tr").forEach(r=>[...r.children].forEach((c,i)=>{ if(c.tagName==="TD") c.setAttribute("data-label", labs[i]||""); }));
-  });
-}
-new MutationObserver(()=>{ if(_lbl) return; _lbl=requestAnimationFrame(()=>{_lbl=0; labelTables();}); }).observe(document.body,{childList:true,subtree:true});
 function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
 function cOpts(unit, o={}) {
   const muted=cv("--muted"), grid=cv("--grid");
