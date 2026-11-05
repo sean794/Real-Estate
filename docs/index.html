@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>서울 아파트 실거래가</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="vendor/chart.umd.js"></script>
 <style>
   :root {
     --bg:#0b0f1a; --surface:#131929; --surface2:#1a2340; --border:#1e2d4a;
@@ -122,23 +122,61 @@
     .filter-bar,.kpi-row,.section,.nav-tabs,header{padding-left:16px;padding-right:16px;}
   }
   #loading{text-align:center;padding:80px;color:var(--muted);font-size:.9rem;}
+
+  /* ── UI cleanup ── */
+  :root{--bg:#0d111c;--surface:#141a29;--surface2:#1a2234;--border:#232c40;--grid:#232c40;--text:#e6e9f0;--muted:#8b93a7;--s1:#3987e5;--s2:#d95926;}
+  body{font-size:15px;line-height:1.5;}
+  header,.nav-tabs,.filter-bar,.kpi-row,.section,.page>div{max-width:1280px;margin-left:auto;margin-right:auto;}
+  header{padding:26px 32px 14px;border-bottom:none;}
+  header h1{font-size:1.3rem;letter-spacing:-.01em;}
+  .nav-tabs{padding:0 32px;background:transparent;border-bottom:1px solid var(--border);max-width:none;}
+  .nav-tabs .nav-tab{padding:12px 18px;font-size:.9rem;}
+  .nav-tabs{display:flex;}
+  .nav-tab.active{color:var(--text);border-bottom-color:var(--s1);}
+  .kpi-row{padding:20px 32px 8px;gap:12px;}
+  .kpi-card{background:var(--surface);border-radius:10px;padding:14px 16px;}
+  .kpi-label{text-transform:none;letter-spacing:0;font-size:.78rem;}
+  .kpi-value{font-size:1.5rem;font-weight:650;}
+  .section{padding:0 32px 24px;}
+  .section-title{text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--text);font-weight:600;margin:6px 0 10px;}
+  .card{border-radius:10px;padding:18px 20px;min-width:0;}
+  .card-title{text-transform:none;letter-spacing:0;font-size:.88rem;color:var(--text);font-weight:600;margin-bottom:4px;}
+  .card-sub{font-size:.76rem;color:var(--muted);margin-bottom:12px;}
+  .chart-grid>*,.two-col>*{min-width:0;}
+  .chart-grid{grid-template-columns:1fr 1fr;}
+  .chart-box{position:relative;height:260px;width:100%;}
+  .chart-box.sm{height:170px;}
+  .legend{display:flex;gap:16px;font-size:.78rem;color:var(--muted);margin:0 0 8px;}
+  .legend i{display:inline-block;width:12px;height:2px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+  .legend i.sq{height:10px;width:10px;border-radius:3px;}
+  details.twin{margin-top:10px;font-size:.78rem;color:var(--muted);}
+  details.twin summary{cursor:pointer;}
+  details.twin table{border-collapse:collapse;margin-top:6px;width:100%;}
+  details.twin td,details.twin th{padding:3px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:400;}
+  details.twin th:first-child,details.twin td:first-child{text-align:left;}
+  .tab-btn.active,.subtab.active,.gu-btn.active,.page-btn.active{background:var(--s1);border-color:var(--s1);}
+  .budget-btn{background:var(--s1);}
+  .info-box{background:var(--surface);border-color:var(--border);color:var(--muted);}
+  .bar,.bar-fill{height:4px;}
+  header,.nav-tabs{max-width:none;padding-left:max(32px,calc((100vw - 1280px)/2 + 32px));padding-right:32px;}
+  .filter-bar{padding-left:32px;padding-right:32px;}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🏙 서울 아파트 실거래가</h1>
+  <h1>서울 아파트 실거래가</h1>
   <div id="updated-badge">로딩 중...</div>
 </header>
 
 <div class="nav-tabs">
-  <button class="nav-tab active" data-page="overview">📊 시장 개요</button>
-  <button class="nav-tab" data-page="transactions">🏠 거래 내역</button>
-  <button class="nav-tab" data-page="detail">🔍 구별 상세</button>
-  <button class="nav-tab" data-page="jeonse">📈 전세가율</button>
-  <button class="nav-tab" data-page="budget">💰 예산 필터</button>
-  <button class="nav-tab" data-page="candidates">🎯 후보 단지</button>
-  <button class="nav-tab" data-page="trends">📉 구별 추이</button>
+  <button class="nav-tab active" data-page="overview">시장 개요</button>
+  <button class="nav-tab" data-page="transactions">거래 내역</button>
+  <button class="nav-tab" data-page="detail">구별 상세</button>
+  <button class="nav-tab" data-page="jeonse">전세가율</button>
+  <button class="nav-tab" data-page="budget">예산 필터</button>
+  <button class="nav-tab" data-page="candidates">후보 단지</button>
+  <button class="nav-tab" data-page="trends">구별 추이</button>
 </div>
 
 <div id="loading">📡 데이터 불러오는 중...</div>
@@ -155,7 +193,7 @@
 
     <!-- 전일 거래 요약 -->
     <div style="padding:16px 40px 0">
-      <div class="section-title">📅 전일 거래 요약</div>
+      <div class="section-title">전일 거래 요약</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
         <div class="card" id="daily-trade-card">
           <div class="card-title">🏠 전일 매매 거래</div>
@@ -168,7 +206,7 @@
       </div>
 
       <!-- 주간 시세 동향 -->
-      <div class="section-title">📈 주간 아파트 시세 동향 <span style="font-size:.7rem;color:var(--muted)">(한국부동산원)</span></div>
+      <div class="section-title">주간 아파트 시세 동향 <span style="font-size:.7rem;color:var(--muted)">(한국부동산원)</span></div>
       <div class="card" style="margin-bottom:16px">
         <div id="weekly-price-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
       </div>
@@ -177,8 +215,8 @@
     <div class="kpi-row" id="kpi-overview"></div>
     <div class="section">
       <div class="chart-grid" style="margin-bottom:13px">
-        <div class="card"><div class="card-title" id="ts-label">월별 평균 매매가 추이</div><canvas id="tsChart" height="230"></canvas></div>
-        <div class="card"><div class="card-title">월별 거래량</div><canvas id="volChart" height="230"></canvas></div>
+        <div class="card"><div class="card-title" id="ts-label">월별 평균 매매가 추이</div><div class="card-sub">마지막 달은 집계 중이라 제외</div><div class="chart-box"><canvas id="tsChart"></canvas></div></div>
+        <div class="card"><div class="card-title">월별 거래량</div><div class="card-sub">옅은 막대는 신고가 덜 모인 최근 두 달</div><div class="chart-box"><canvas id="volChart"></canvas></div></div>
       </div>
     </div>
   </div>
@@ -338,10 +376,10 @@
     <div class="kpi-row" id="t-kpi"></div>
     <div class="section">
       <div class="two-col">
-        <div class="card"><div class="card-title">월별 거래량 (계약일 기준)</div><canvas id="t-vol"></canvas></div>
-        <div class="card"><div class="card-title">평당가: 매매 vs 전세 (만원/평)</div><canvas id="t-ppm"></canvas></div>
+        <div class="card"><div class="card-title">월별 거래량</div><div class="card-sub">계약일 기준 · 옅은 막대는 신고가 덜 모인 최근 달</div><div class="chart-box"><canvas id="t-vol"></canvas></div></div>
+        <div class="card"><div class="card-title">평당가: 매매 vs 전세</div><div class="card-sub">만원/평 · 확정된 달만 표시</div><div class="legend"><span><i style="background:var(--s1)"></i>매매</span><span><i style="background:var(--s2)"></i>전세</span></div><div class="chart-box"><canvas id="t-ppm"></canvas></div></div>
       </div>
-      <div class="card" style="margin-top:13px"><div class="card-title">전세가율 추이 (%)</div><canvas id="t-rate"></canvas></div>
+      <div class="card" style="margin-top:13px"><div class="card-title">전세가율 추이 (%)</div><div class="chart-box sm"><canvas id="t-rate"></canvas></div></div>
     </div>
     <div class="section">
       <div class="card">
@@ -587,7 +625,7 @@ function renderTrends() {
   const labels = TX.months.map(m => m.slice(2,4)+"."+m.slice(4));
   const pyOf = a => a.map(v => v==null ? null : Math.round(v*3.3058));
   const partialIdx = Math.max(0, TX.months.indexOf(TX.partial_from));
-  const volColors = TX.months.map((_,i) => i>=partialIdx ? "rgba(59,124,244,.35)" : "rgba(59,124,244,.9)");
+  const volColors = TX.months.map((_,i) => i>=partialIdx ? "x" : "y");
   const lastFull = Math.max(0, partialIdx-1);
   const last = k => { for (let i=d[k].length-1;i>=0;i--) if (d[k][i]!=null) return d[k][i]; return null; };
   document.getElementById("t-kpi").innerHTML =
@@ -596,12 +634,17 @@ function renderTrends() {
     kpi("평당 전세가", (pyOf([last("jppm")])[0]||"–").toLocaleString()+"만", "", "") +
     kpi("전세가율", (last("rate")??"–")+"%", "구 중위값 기준", "");
   destroy("t-vol"); destroy("t-ppm"); destroy("t-rate");
-  charts["t-vol"] = new Chart(document.getElementById("t-vol"), {type:"bar", data:{labels, datasets:[{data:d.vol, backgroundColor:volColors, borderRadius:4}]}, options:cOpts("건")});
+  const s1=cv("--s1"), s2=cv("--s2");
+  const vcol=TX.months.map((_,i)=> i>=partialIdx ? s1+"55" : s1);
+  charts["t-vol"] = new Chart(document.getElementById("t-vol"), {type:"bar", data:{labels, datasets:[{label:"거래량", data:d.vol, ...barStyle(vcol)}]}, options:cOpts("건",{zero:true})});
+  const pm=pyOf(d.ppm), pj=pyOf(d.jppm), pr=d.rate.map((v,i)=>i>=partialIdx?null:v);
+  const cut=a=>a.map((v,i)=>i>=partialIdx?null:v);
   charts["t-ppm"] = new Chart(document.getElementById("t-ppm"), {type:"line", data:{labels, datasets:[
-    {label:"매매", data:pyOf(d.ppm), borderColor:"#f59e0b", tension:.3, spanGaps:true},
-    {label:"전세", data:pyOf(d.jppm), borderColor:"#14b8a6", tension:.3, spanGaps:true}]},
-    options:{...cOpts("만원/평"), plugins:{...cOpts("").plugins, legend:{display:true, labels:{color:"#94a3b8"}}}}});
-  charts["t-rate"] = new Chart(document.getElementById("t-rate"), {type:"line", data:{labels, datasets:[{data:d.rate, borderColor:"#a855f7", tension:.3, spanGaps:true, fill:false}]}, options:cOpts("%")});
+    {label:"매매", data:cut(pm), borderColor:s1, backgroundColor:s1, spanGaps:true},
+    {label:"전세", data:cut(pj), borderColor:s2, backgroundColor:s2, spanGaps:true}]}, options:cOpts("만원/평")});
+  charts["t-rate"] = new Chart(document.getElementById("t-rate"), {type:"line", data:{labels, datasets:[{label:"전세가율", data:pr, borderColor:s1, backgroundColor:s1, spanGaps:true}]}, options:cOpts("%")});
+  setTwin("t-vol", labels, [{name:"거래량",data:d.vol}]);
+  setTwin("t-ppm", labels, [{name:"매매(만/평)",data:cut(pm)},{name:"전세(만/평)",data:cut(pj)}]);
 }
 
 function renderWeeklyGu() {
@@ -620,12 +663,30 @@ function fmtWon(v) {
   return Math.round(v/1000)+"천만";
 }
 function destroy(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
-function cOpts(unit) {
+function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function cOpts(unit, o={}) {
+  const muted=cv("--muted"), grid=cv("--grid");
   return {
-    responsive:true,
-    plugins:{legend:{display:false},tooltip:{backgroundColor:"#1a2340",borderColor:"#1e2d4a",borderWidth:1,titleColor:"#e2e8f0",bodyColor:"#94a3b8",callbacks:{label:ctx=>` ${ctx.parsed.y?.toLocaleString()} ${unit}`}}},
-    scales:{x:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e2d4a"}},y:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e2d4a"}}}
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:"index", intersect:false},
+    elements:{line:{borderWidth:2, tension:0, borderJoinStyle:"round", borderCapStyle:"round"}, point:{radius:0, hoverRadius:5, hitRadius:24, borderWidth:2, borderColor:cv("--surface")}},
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:cv("--surface2"),borderColor:grid,borderWidth:1,titleColor:cv("--text"),bodyColor:cv("--text"),padding:10,boxPadding:4,
+        callbacks:{label:ctx=>` ${ctx.dataset.label?ctx.dataset.label+"  ":""}${ctx.parsed.y==null?"–":ctx.parsed.y.toLocaleString(undefined,{maximumFractionDigits:2})} ${unit}`}}},
+    scales:{
+      x:{grid:{display:false},border:{color:grid},ticks:{color:muted,font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:o.xTicks||8}},
+      y:{grid:{color:grid,lineWidth:1},border:{display:false},beginAtZero:!!o.zero,ticks:{color:muted,font:{size:11},maxTicksLimit:5,padding:6,callback:v=>v.toLocaleString()}}}
   };
+}
+function barStyle(colors){return {backgroundColor:colors,borderRadius:{topLeft:4,topRight:4},borderSkipped:"bottom",maxBarThickness:24,categoryPercentage:.8,barPercentage:.9};}
+function twin(labels, cols){ // 표 보기
+  let h='<details class="twin"><summary>표로 보기</summary><table><tr><th></th>'+cols.map(c=>`<th>${c.name}</th>`).join("")+"</tr>";
+  labels.forEach((l,i)=>{h+=`<tr><td>${l}</td>`+cols.map(c=>`<td>${c.data[i]==null?"–":c.data[i].toLocaleString()}</td>`).join("")+"</tr>";});
+  return h+"</table></details>";
+}
+function setTwin(id, labels, cols){
+  const box=document.getElementById(id).closest(".card"); let t=box.querySelector("details.twin"); if(t)t.remove();
+  box.insertAdjacentHTML("beforeend", twin(labels, cols));
 }
 function kpi(label, value, sub, dir) {
   return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub ${dir}">${sub}</div>`:""}</div>`;
@@ -702,21 +763,14 @@ function renderWeeklyPrice() {
     ${jLatest?`<div class="stat-item"><span>서울 전세 변동률</span><strong style="color:${jLatest.변동률>0?"var(--red)":jLatest.변동률<0?"var(--teal)":"var(--muted)"}">${jLatest.변동률>0?"▲":jLatest.변동률<0?"▼":"–"} ${Math.abs(jLatest.변동률).toFixed(2)}%</strong></div>`:""}
   </div>`;
 
-  // 주간 변동률 미니 차트 (텍스트 바)
-  html += `<div style="display:flex;gap:6px;align-items:flex-end;height:60px">`;
-  const maxAbs = Math.max(...recent.map(d=>Math.abs(d.변동률||0)), 0.01);
-  recent.forEach(d => {
-    const h = Math.round((Math.abs(d.변동률||0)/maxAbs)*50)+4;
-    const color = d.변동률>0?"var(--red)":d.변동률<0?"var(--teal)":"var(--muted)";
-    const label = d.기준일?.slice(4,8)||"";
-    html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-      <div style="font-size:.65rem;color:${color}">${d.변동률>0?"+":""}${(d.변동률||0).toFixed(2)}%</div>
-      <div style="width:100%;height:${h}px;background:${color};border-radius:2px;opacity:.8"></div>
-      <div style="font-size:.6rem;color:var(--muted)">${label}</div>
-    </div>`;
-  });
-  html += `</div>`;
+  html += `<div class="legend"><span><i style="background:var(--s1)"></i>매매</span><span><i style="background:var(--s2)"></i>전세</span></div><div class="chart-box sm"><canvas id="wk-chart"></canvas></div>`;
   el.innerHTML = html;
+  const wl=recent.map(d=>(d.기준일||"").slice(4,6)+"."+(d.기준일||"").slice(6,8));
+  const jmap={}; jeonse.forEach(d=>jmap[d.기준일]=d.변동률);
+  destroy("wk");
+  charts.wk=new Chart(document.getElementById("wk-chart"),{type:"line",data:{labels:wl,datasets:[
+    {label:"매매",data:recent.map(d=>d.변동률),borderColor:cv("--s1"),backgroundColor:cv("--s1"),spanGaps:true},
+    {label:"전세",data:recent.map(d=>jmap[d.기준일]??null),borderColor:cv("--s2"),backgroundColor:cv("--s2"),spanGaps:true}]},options:cOpts("%")});
 }
 
 // ── 시장 개요 ─────────────────────────────────────────
@@ -741,9 +795,15 @@ function renderOverview() {
   const vals = currentType==="trade" ? data.map(d=>d.전체평균/10000||0) : data.map(d=>d.평균보증금/10000||0);
   document.getElementById("ts-label").textContent = currentType==="trade" ? "월별 평균 매매가 추이" : "월별 평균 보증금 추이";
   destroy("tsChart");
-  charts.ts = new Chart(document.getElementById("tsChart"),{type:"line",data:{labels,datasets:[{label:"억원",data:vals,borderColor:"#3b7cf4",backgroundColor:"rgba(59,124,244,.1)",tension:.4,fill:true,pointRadius:5,pointBackgroundColor:"#3b7cf4"}]},options:cOpts("억원")});
+  const s1=cv("--s1"), s2=cv("--s2");
+  const lastI=labels.length-1;
+  const vline=vals.map((v,i)=>i===lastI&&currentType==="trade"?null:v);
+  charts.ts = new Chart(document.getElementById("tsChart"),{type:"line",data:{labels,datasets:[{label:"억원",data:vline,borderColor:s1,backgroundColor:s1+"1a",fill:true,spanGaps:true}]},options:cOpts("억원",{xTicks:7})});
   destroy("volChart");
-  charts.vol = new Chart(document.getElementById("volChart"),{type:"bar",data:{labels,datasets:[{label:"거래수",data:data.map(d=>d.거래수||0),backgroundColor:"rgba(245,158,11,.6)",borderColor:"#f59e0b",borderWidth:1,borderRadius:4}]},options:cOpts("건")});
+  const cnt=data.map(d=>d.거래수||0);
+  const cols=cnt.map((_,i)=>i>=cnt.length-2?s1+"55":s1);
+  charts.vol = new Chart(document.getElementById("volChart"),{type:"bar",data:{labels,datasets:[{label:"거래수",data:cnt,...barStyle(cols)}]},options:cOpts("건",{zero:true,xTicks:7})});
+  setTwin("tsChart",labels,[{name:"억원",data:vline}]); setTwin("volChart",labels,[{name:"거래수",data:cnt}]);
 }
 
 // ── 거래 내역 ─────────────────────────────────────────
