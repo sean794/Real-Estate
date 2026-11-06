@@ -22,6 +22,21 @@ def month_list(n):
         if m == 0: y, m = y - 1, 12
     return out  # 최신 -> 과거
 
+def month_ok_file(path, new_col):
+    """월 CSV가 최신 스키마(해제여부/계약구분 열)이고 25개 구가 다 있어야 '완료'"""
+    if not path.exists(): return False
+    try:
+        d = pd.read_csv(path, encoding="utf-8-sig", dtype=str, usecols=lambda c: c in ("구", new_col))
+    except Exception:
+        return False
+    return new_col in d.columns and d["구"].nunique() >= len(fd.SEOUL_GU_CODES)
+
+def cache_ok(path, new_col):
+    """중간 캐시가 최신 스키마인지(옛 스키마 캐시는 버리고 다시 수집). 빈 파일(결과 0건)은 유효"""
+    if not path.exists(): return False
+    if path.stat().st_size == 0: return True
+    return new_col in pd.read_csv(path, encoding="utf-8-sig", dtype=str, nrows=1).columns
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--months", type=int, default=36)
@@ -30,7 +45,7 @@ def main():
 
     trade_dir, rent_dir = Path("data/apt_trade"), Path("data/apt_rent")
     todo = [ym for ym in month_list(args.months)[3:]            # 최근 3개월은 일일 수집이 담당
-            if not ((trade_dir/f"{ym}.csv").exists() and (rent_dir/f"{ym}.csv").exists())]
+            if not (month_ok_file(trade_dir/f"{ym}.csv", "해제여부") and month_ok_file(rent_dir/f"{ym}.csv", "계약구분"))]
     if not todo:
         print("백필: 모두 완료"); return
     print(f"백필 대기 {len(todo)}개월: {todo[0]} ~ {todo[-1]}")
@@ -46,7 +61,7 @@ def main():
             for gu_name, gu_code in fd.SEOUL_GU_CODES.items():
                 for kind, (url, key, parser, _) in kinds.items():
                     cache = PARTIAL / kind / f"{ym}_{gu_code}.csv"
-                    if cache.exists():
+                    if cache_ok(cache, "해제여부" if kind == "trade" else "계약구분"):
                         continue
                     if calls >= args.max_calls:
                         raise fd.QuotaExceeded("자체 호출 상한")

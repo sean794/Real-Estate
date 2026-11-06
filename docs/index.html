@@ -231,11 +231,11 @@
       <div class="section-title">전일 거래 요약</div>
       <div class="two-col" style="margin-bottom:16px">
         <div class="card" id="daily-trade-card">
-          <div class="card-title">전일 매매 거래</div>
+          <div class="card-title">최근 7일 매매 (해제·직거래 제외)</div>
           <div id="daily-trade-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
         </div>
         <div class="card" id="daily-rent-card">
-          <div class="card-title">전일 전월세 거래</div>
+          <div class="card-title">최근 7일 전월세</div>
           <div id="daily-rent-content" style="color:var(--muted);font-size:.85rem">로딩 중...</div>
         </div>
       </div>
@@ -250,8 +250,8 @@
     <div class="kpi-row" id="kpi-overview"></div>
     <div class="section">
       <div class="chart-grid" style="margin-bottom:13px">
-        <div class="card"><div class="card-title" id="ts-label">월별 평균 매매가 추이</div><div class="card-sub">마지막 달은 집계 중이라 제외</div><div class="chart-box"><canvas id="tsChart"></canvas></div></div>
-        <div class="card"><div class="card-title">월별 거래량</div><div class="card-sub">옅은 막대는 신고가 덜 모인 최근 두 달</div><div class="chart-box"><canvas id="volChart"></canvas></div></div>
+        <div class="card"><div class="card-title" id="ts-label">월별 평당 중위 매매가 추이</div><div class="card-sub">면적 구성 영향을 줄이려고 ㎡당 가격의 중위값을 평당으로 환산 · 집계 중인 달 제외</div><div class="chart-box"><canvas id="tsChart"></canvas></div></div>
+        <div class="card"><div class="card-title">월별 거래량</div><div class="card-sub">해제(취소)·직거래 제외 · 옅은 막대는 신고가 덜 모인 달</div><div class="chart-box"><canvas id="volChart"></canvas></div></div>
       </div>
     </div>
   </div>
@@ -618,7 +618,7 @@ function renderCandidates() {
   const key = {
     rate: x => -(x.rate ?? -1), gap: x => (x.gap==null ? 1e12 : x.gap), ret12: x => -(x.ret12 ?? -1e6),
     chg_prev: x => -(x.chg_prev ?? -1e6), date: x => -new Date(x.last[1]).getTime(),
-    price_asc: x => x.base, price_desc: x => -x.base,
+    price_asc: x => (x.base ?? x.last[0]), price_desc: x => -(x.base ?? x.last[0]),
   }[sort];
   const CK = {name:x=>x.name, a:x=>x.a, last:x=>x.last[0], chg:x=>x.chg_prev, ret:x=>x.ret12, high:x=>x.high[0], j:x=>x.j||null, rate:x=>x.rate, gap:x=>x.gap, built:x=>x.built||null, n:x=>x.n};
   if (candCol) {
@@ -678,15 +678,15 @@ function renderTrends() {
   const d = TX.gu[gu]; if (!d) return;
   const labels = TX.months.map(m => m.slice(2,4)+"."+m.slice(4));
   const pyOf = a => a.map(v => v==null ? null : Math.round(v*3.3058));
-  const partialIdx = Math.max(0, TX.months.indexOf(TX.partial_from));
+  const pIdx0 = TX.months.indexOf(TX.partial_from); const partialIdx = pIdx0 < 0 ? TX.months.length : pIdx0;
   const volColors = TX.months.map((_,i) => i>=partialIdx ? "x" : "y");
-  const lastFull = Math.max(0, partialIdx-1);
-  const last = k => { for (let i=d[k].length-1;i>=0;i--) if (d[k][i]!=null) return d[k][i]; return null; };
+  const lastFull = Math.max(0, Math.min(partialIdx, TX.months.length)-1);
+  const last = k => { for (let i=lastFull;i>=0;i--) if (d[k][i]!=null) return d[k][i]; return null; };
   document.getElementById("t-kpi").innerHTML =
     kpi("최근 확정 월 거래량", (d.vol[lastFull]||0).toLocaleString()+"건", TX.months[lastFull], "") +
     kpi("평당 매매가", (pyOf([last("ppm")])[0]||"–").toLocaleString()+"만", "", "") +
     kpi("평당 전세가", (pyOf([last("jppm")])[0]||"–").toLocaleString()+"만", "", "") +
-    kpi("전세가율", (last("rate")??"–")+"%", "구 중위값 기준", "");
+    kpi("전세가율", (last("rate")??"–")+"%", "갱신 제외 · 중위값 기준", "");
   destroy("t-vol"); destroy("t-ppm"); destroy("t-rate");
   const s1=cv("--s1"), s2=cv("--s2");
   const vcol=TX.months.map((_,i)=> i>=partialIdx ? s1+"55" : s1);
@@ -760,7 +760,7 @@ function renderDailyRecap() {
       <div class="stat-bar" style="margin-bottom:10px">
         <div class="stat-item"><span>기간</span><strong>${recap.date}</strong></div>
         <div class="stat-item"><span>총 거래</span><strong>${recap.trade.건수}건</strong></div>
-        <div class="stat-item"><span>평균가</span><strong>${fmtWon(recap.trade.평균가)}</strong></div>
+        <div class="stat-item"><span>중위가</span><strong>${fmtWon(recap.trade.중위가||recap.trade.평균가)}</strong></div>
         <div class="stat-item"><span>최고가</span><strong>${fmtWon(recap.trade.최고가)}</strong></div>
       </div>
       <div style="font-size:.78rem;color:var(--muted)">최고가 단지: <span style="color:var(--amber)">${recap.trade.최고가_단지||"–"}</span></div>
@@ -775,8 +775,8 @@ function renderDailyRecap() {
     rentEl.innerHTML = `
       <div class="stat-bar" style="margin-bottom:10px">
         <div class="stat-item"><span>기간</span><strong>${recap.date}</strong></div>
-        <div class="stat-item"><span>총 거래</span><strong>${recap.rent.건수}건</strong></div>
-        <div class="stat-item"><span>평균보증금</span><strong>${fmtWon(recap.rent.평균보증금)}</strong></div>
+        <div class="stat-item"><span>전월세</span><strong>${recap.rent.건수}건</strong></div>
+        <div class="stat-item"><span>전세 중위 보증금</span><strong>${fmtWon(recap.rent.중위보증금||recap.rent.평균보증금)}</strong></div>
       </div>
       <div style="font-size:.78rem;color:var(--muted)">거래 많은 구: ${topGu||"–"}</div>
     `;
@@ -828,36 +828,47 @@ function renderWeeklyPrice() {
 }
 
 // ── 시장 개요 ─────────────────────────────────────────
+function fullMonthIdx(data) {   // 신고 지연으로 덜 모인 최근 달을 건너뛴 '충분히 모인 마지막 달'
+  let i = data.length-1;
+  while (i>0 && (data[i].거래수||0) < 0.5*(data[i-1].거래수||0)) i--;
+  return i;
+}
+function ymLabel(ym){ return `${ym.slice(0,4)}.${ym.slice(4)}`; }
 function renderOverview() {
   const data = S[currentType]; if(!data||!data.length) return;
-  const last = data[data.length-1]; const prev = data[data.length-2]||null;
+  const ri = fullMonthIdx(data);                 // 기준 달(집계가 충분한 마지막 달)
+  const ref = data[ri], prev = data[ri-1]||null;
+  const isTrade = currentType==="trade";
   let html = "";
-  if (currentType==="trade") {
-    const chg = prev ? ((last.전체평균-prev.전체평균)/prev.전체평균*100) : null;
-    html += kpi("평균 매매가 (이상치 제거)", fmtWon(last.전체평균), chg?`${chg>0?"▲":"▼"} ${Math.abs(chg).toFixed(1)}% 전월`:"", chg>0?"up":"down");
-    html += kpi("중위 거래가", fmtWon(last.전체중위), "", "");
-    html += kpi("총 거래", last.거래수?.toLocaleString()+"건", "", "");
-    html += kpi("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)}~${last.ym.slice(0,4)}.${last.ym.slice(4)}`, `${data.length}개월`, "");
+  const pct = (a,b) => (a&&b) ? (a/b-1)*100 : null;
+  const arrow = c => c==null ? "" : `${c>0?"▲":"▼"} ${Math.abs(c).toFixed(1)}% 전월`;
+  if (isTrade) {
+    const c = pct(ref.평당중위, prev&&prev.평당중위);
+    html += kpi(`평당 중위 매매가 (${ymLabel(ref.ym)})`, (ref.평당중위 ? Math.round(ref.평당중위).toLocaleString()+"만원" : "집계 중"), arrow(c), c>0?"up":"down");
+    html += kpi("중위 거래가", fmtWon(ref.전체중위), "면적 구성에 따라 달라짐", "");
+    html += kpi(`거래 건수 (${ymLabel(ref.ym)})`, ref.거래수.toLocaleString()+"건", "해제·직거래 제외", "");
+    html += kpi("수집 기간", `${ymLabel(data[0].ym)}~${ymLabel(data[data.length-1].ym)}`, `${data.length}개월 · 마지막 ${data.length-1-ri}개월은 집계 중`, "");
   } else {
-    html += kpi("평균 보증금", fmtWon(last.평균보증금), "", "");
-    html += kpi("평균 월세", fmtWon(last.평균월세)+"/월", "", "");
-    html += kpi("총 거래", last.거래수?.toLocaleString()+"건", "", "");
-    html += kpi("수집 기간", `${data[0].ym.slice(0,4)}.${data[0].ym.slice(4)}~${last.ym.slice(0,4)}.${last.ym.slice(4)}`, "", "");
+    html += kpi(`평균 전세 보증금 (${ymLabel(ref.ym)})`, fmtWon(ref.평균보증금), ref.갱신제외?"신규계약만":"갱신계약 포함(수집 보강 중)", "");
+    html += kpi("평균 월세", fmtWon(ref.평균월세)+"/월", "", "");
+    html += kpi(`전월세 건수 (${ymLabel(ref.ym)})`, ref.거래수.toLocaleString()+"건", "", "");
+    html += kpi("수집 기간", `${ymLabel(data[0].ym)}~${ymLabel(data[data.length-1].ym)}`, `${data.length}개월`, "");
   }
   document.getElementById("kpi-overview").innerHTML = html;
-  const labels = data.map(d=>`${d.ym.slice(0,4)}.${d.ym.slice(4)}`);
-  const vals = currentType==="trade" ? data.map(d=>d.전체평균/10000||0) : data.map(d=>d.평균보증금/10000||0);
-  document.getElementById("ts-label").textContent = currentType==="trade" ? "월별 평균 매매가 추이" : "월별 평균 보증금 추이";
+  const labels = data.map(d=>ymLabel(d.ym));
+  // 추이: 집계 덜 된 최근 달은 제외, 전세는 갱신계약을 뺀 월만 표시
+  let vals, unit, ttl;
+  if (isTrade) { vals = data.map((d,i)=> i<=ri ? Math.round(d.평당중위||0)||null : null); unit="만원/평"; ttl="월별 평당 중위 매매가 추이"; }
+  else { vals = data.map((d,i)=> (i<=ri && d.갱신제외) ? +(d.평균보증금/10000).toFixed(2) : null); unit="억원"; ttl="월별 평균 전세 보증금 추이 (신규계약)"; }
+  document.getElementById("ts-label").textContent = ttl;
   destroy("tsChart");
-  const s1=cv("--s1"), s2=cv("--s2");
-  const lastI=labels.length-1;
-  const vline=vals.map((v,i)=>i===lastI&&currentType==="trade"?null:v);
-  charts.ts = new Chart(document.getElementById("tsChart"),{type:"line",data:{labels,datasets:[{label:"억원",data:vline,borderColor:s1,backgroundColor:s1+"1a",fill:true,spanGaps:true}]},options:cOpts("억원",{xTicks:7})});
+  const s1=cv("--s1");
+  charts.ts = new Chart(document.getElementById("tsChart"),{type:"line",data:{labels,datasets:[{label:unit,data:vals,borderColor:s1,backgroundColor:s1+"1a",fill:true,spanGaps:true}]},options:cOpts(unit,{xTicks:7})});
   destroy("volChart");
   const cnt=data.map(d=>d.거래수||0);
-  const cols=cnt.map((_,i)=>i>=cnt.length-2?s1+"55":s1);
+  const cols=cnt.map((_,i)=>i>ri?s1+"55":s1);
   charts.vol = new Chart(document.getElementById("volChart"),{type:"bar",data:{labels,datasets:[{label:"거래수",data:cnt,...barStyle(cols)}]},options:cOpts("건",{zero:true,xTicks:7})});
-  setTwin("tsChart",labels,[{name:"억원",data:vline}]); setTwin("volChart",labels,[{name:"거래수",data:cnt}]);
+  setTwin("tsChart",labels,[{name:unit,data:vals}]); setTwin("volChart",labels,[{name:"거래수",data:cnt}]);
 }
 
 // ── 거래 내역 ─────────────────────────────────────────
@@ -1033,10 +1044,10 @@ function renderDetail() {
   if (currentType2==="trade" && tData) {
     html += kpi("이상치 제거 평균", fmtWon(tData.전체평균), "", "");
     html += kpi("중위가", fmtWon(tData.전체중위), "", "");
-    html += kpi("총 거래", tData.거래수?.toLocaleString()+"건", "", "");
+    html += kpi("총 거래", tData.거래수?.toLocaleString()+"건", "해제·직거래 제외", "");
     html += kpi("기준 월", `${currentMonth.slice(0,4)}년 ${currentMonth.slice(4)}월`, "", "");
   } else if (rData) {
-    html += kpi("전세 평균 보증금", fmtWon(rData.평균보증금), "", "");
+    html += kpi("전세 평균 보증금", fmtWon(rData.평균보증금), rData.갱신제외?"신규계약만":"갱신계약 포함(수집 보강 중)", "");
     html += kpi("총 거래", rData.거래수?.toLocaleString()+"건", "", "");
     html += kpi("기준 월", `${currentMonth.slice(0,4)}년 ${currentMonth.slice(4)}월`, "", "");
   }
@@ -1084,7 +1095,6 @@ function renderPopular() {
 async function renderJeonse() {
   let jData = null;
   try { const r = await fetch("data/jeonse_gu.json"); const j = await r.json(); jData = j.items.map(d=>({...d, 평균매매가:d.매매중위가, 평균전세가:d.전세중위가, ym:(j.updated||"").replace(/-/g,"").slice(0,6)})); } catch(e) {}
-  if(!jData||!jData.length) jData = S.jeonse_rate;
   if(!jData||!jData.length) return;
   const buyN = jData.filter(d=>d.신호==="매수고려").length;
   const avgR = (jData.reduce((s,d)=>s+d.전세가율,0)/jData.length).toFixed(1);
@@ -1113,7 +1123,7 @@ function runBudget() {
   const minB = parseFloat(document.getElementById("b-min").value)||0;
   const maxB = parseFloat(document.getElementById("b-max").value)||Infinity;
   const size = document.getElementById("b-size").value;
-  const tData = S.trade[S.trade.length-1]; if(!tData) return;
+  const tData = S.trade[fullMonthIdx(S.trade)]; if(!tData) return;   // 집계가 덜 된 최근 달은 쓰지 않음
   let results = [];
   if (size==="all") {
     results = (tData.구별||[]).filter(d=>d.중위가>=minB&&d.중위가<=maxB).map(d=>({구:d.구,가격:d.중위가,거래수:d.거래수,면적:"전체"}));
@@ -1125,7 +1135,7 @@ function runBudget() {
   results.sort((a,b)=>a.가격-b.가격);
   const el = document.getElementById("budget-results");
   if (!results.length) { el.innerHTML=`<div class="empty">해당 예산 범위 거래 없음. 범위를 조정해보세요!</div>`; return; }
-  el.innerHTML = results.slice(0,12).map(r=>`
+  el.innerHTML = `<div class="card-sub" style="grid-column:1/-1">${ymLabel(tData.ym)} 거래 기준 · 해제·직거래 제외 · ${results.length}개 구</div>` + results.map(r=>`
     <div class="budget-card">
       <div class="budget-gu">${r.구}</div>
       <div class="budget-price">중위가 ${fmtWon(r.가격)}</div>

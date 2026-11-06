@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from clean import clean_trade, clean_rent, new_contracts_only, has_new_schema_rent
 
 TRADE_DIR, RENT_DIR = Path("data/apt_trade"), Path("data/apt_rent")
 OUT = Path("docs/data")
@@ -21,7 +22,7 @@ def num(s): return pd.to_numeric(s.astype(str).str.replace(",", ""), errors="coe
 def load_trade():
     frames = []
     for f in sorted(TRADE_DIR.glob("*.csv")):
-        d = pd.read_csv(f, encoding="utf-8-sig", dtype=str)
+        d = clean_trade(pd.read_csv(f, encoding="utf-8-sig", dtype=str))     # 해제(취소) 거래 제거
         d["ym"] = f.stem
         frames.append(d)
     if not frames: return pd.DataFrame()
@@ -30,7 +31,6 @@ def load_trade():
     d["built"] = num(d["건축년도"])
     d["date"] = pd.to_datetime(d["년"].astype(str) + "-" + d["월"].astype(str).str.zfill(2) + "-" + d["일"].astype(str).str.zfill(2), errors="coerce")
     d = d.dropna(subset=["price", "area", "date"])
-    d = d.drop_duplicates(subset=["구", "법정동", "아파트명", "area", "floor", "price", "date"])
     d["a"] = d["area"].round().astype(int)
     d["ppm"] = d["price"] / d["area"]          # 만원/㎡
     return d
@@ -47,15 +47,18 @@ def build():
 
     # ── 전월세: 월별 구 단위 집계 + 최근 4개월 단지 단위 보관 ───────────────
     rent_months = sorted(p.stem for p in RENT_DIR.glob("*.csv"))
-    recent_rent_months = set(rent_months[-4:])
-    gu_month_rent = {}      # (ym, gu) -> (median ppm, n)
+    recent_rent_months = set(rent_months[-4:])         # 최근 4개월(갱신 제외 신규 전세)
+    gu_month_rent = {}      # (ym, gu|None) -> (median ppm, n)   (신규 전세만, 최신 스키마 월만)
     recent_rent = []
     for ym in rent_months:
-        d = pd.read_csv(RENT_DIR / f"{ym}.csv", encoding="utf-8-sig", dtype=str)
+        d = clean_rent(pd.read_csv(RENT_DIR / f"{ym}.csv", encoding="utf-8-sig", dtype=str))
+        if not has_new_schema_rent(d):
+            continue                      # 계약구분(신규/갱신)을 모르는 옛 데이터는 전세 시세에 쓰지 않음(백필로 채워짐)
         d["dep"] = num(d["보증금"]); d["mon"] = num(d["월세"]).fillna(0); d["area"] = num(d["전용면적"])
         d = d.dropna(subset=["dep", "area"])
-        d = d[(d["mon"] == 0) & (d["area"] > 0)]
+        d = new_contracts_only(d[(d["mon"] == 0) & (d["area"] > 0)])      # 전세 + 갱신계약 제외
         d["ppm"] = d["dep"] / d["area"]
+        gu_month_rent[(ym, None)] = (float(d["ppm"].median()), int(len(d))) if len(d) else (0.0, 0)
         for gu, g in d.groupby("구"):
             gu_month_rent[(ym, gu)] = (float(g["ppm"].median()), int(len(g)))
         if ym in recent_rent_months:
@@ -80,13 +83,13 @@ def build():
         hi = g.loc[hi_idx]
         prev = g.iloc[-2] if n >= 2 else None
         r180 = g[g["date"] >= cut180]["price"]
-        base = float(r180.median()) if len(r180) else float(last["price"])
+        base = float(r180.median()) if len(r180) else None     # 최근 180일 거래가 없으면 전세가율·갭 계산 안 함(낡은 가격과 비교 방지)
         now90 = g[g["date"] >= cut90]["price"]
         old = g[(g["date"] >= y_lo) & (g["date"] <= y_hi)]["price"]
         ret12 = round((float(now90.median()) / float(old.median()) - 1) * 100, 1) if len(now90) and len(old) else None
         j = jeonse.loc[k] if k in jeonse.index else None
         jv = float(j["j"]) if j is not None else None
-        rate = round(jv / base * 100, 1) if jv else None
+        rate = round(jv / base * 100, 1) if (jv and base) else None
         rec = {
             "gu": k[0], "dong": k[1], "name": k[2], "a": int(k[3]), "py": round(float(g["area"].mean()) / M2_TO_PY, 1),
             "built": int(g["built"].mode().iloc[0]) if g["built"].notna().any() else None,
@@ -95,9 +98,9 @@ def build():
             "high": [int(hi["price"]), hi["date"].strftime("%Y-%m-%d")],
             "chg_prev": round((float(last["price"]) / float(prev["price"]) - 1) * 100, 1) if prev is not None else None,
             "ret12": ret12,
-            "base": int(base),
+            "base": int(base) if base else None,
             "j": int(jv) if jv else None, "jn": int(j["jn"]) if j is not None else 0,
-            "rate": rate, "gap": int(base - jv) if jv else None,
+            "rate": rate, "gap": int(base - jv) if (jv and base) else None,
         }
         complexes.append(rec)
         # 신고가: 최근 30일 안에 직전까지의 최고가를 넘은 거래
@@ -112,19 +115,20 @@ def build():
     # ── 구별 월 추이 ────────────────────────────────────────────────────
     months = sorted(t["ym"].unique())
     gus = sorted(t["구"].unique())
-    trends = {"months": months, "partial_from": months[-2] if len(months) >= 2 else months[-1], "gu": {}}
+    # 신고 지연으로 덜 모인 달: 직전 달 거래 수의 절반에 못 미치는 최근 달부터 '집계 중'
+    cnt = [int(len(t_main[t_main["ym"] == m])) for m in months]
+    fi = len(months) - 1
+    while fi > 0 and cnt[fi] < 0.5 * cnt[fi - 1]:
+        fi -= 1
+    trends = {"months": months, "partial_from": months[fi + 1] if fi + 1 < len(months) else "999999", "gu": {}}
     def series(gu):
         vol, ppm, jp, rate = [], [], [], []
         for ym in months:
             g = t_main[(t_main["ym"] == ym) & ((t_main["구"] == gu) if gu else True)]
-            vol.append(int(len(t[(t["ym"] == ym) & ((t["구"] == gu) if gu else True)])))
+            vol.append(int(len(g)))
             p = float(g["ppm"].median()) if len(g) >= 3 else None
             ppm.append(round(p, 1) if p else None)
-            if gu:
-                jr = gu_month_rent.get((ym, gu))
-            else:
-                vals = [v for (m, _), v in gu_month_rent.items() if m == ym]
-                jr = (float(np.median([v[0] for v in vals])), sum(v[1] for v in vals)) if vals else None
+            jr = gu_month_rent.get((ym, gu if gu else None))
             jpv = jr[0] if jr and jr[1] >= 5 else None
             jp.append(round(jpv, 1) if jpv else None)
             rate.append(round(jpv / p * 100, 1) if jpv and p else None)

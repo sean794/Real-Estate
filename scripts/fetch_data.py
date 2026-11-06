@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from clean import clean_trade, clean_rent, new_contracts_only, has_new_schema_rent
 
 TRADE_API_KEY = os.environ["MOLIT_TRADE_API_KEY"]
 RENT_API_KEY  = os.environ["MOLIT_RENT_API_KEY"]
@@ -30,7 +31,12 @@ BASE_RENT_URL  = "http://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataS
 REB_BASE_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do"
 
 def get_ym_list(months_back=3):
-    return [(datetime.today()-timedelta(days=30*i)).strftime("%Y%m") for i in range(months_back)]
+    """이번 달부터 거슬러 올라간 YYYYMM 목록 (달력 기준; 30일 단위 계산은 31일에 같은 달이 중복됨)"""
+    t = datetime.today(); y, m = t.year, t.month; out = []
+    for _ in range(months_back):
+        out.append(f"{y}{m:02d}"); m -= 1
+        if m == 0: y, m = y - 1, 12
+    return out
 
 class QuotaExceeded(Exception):
     pass
@@ -89,6 +95,7 @@ def parse_trade(root, gu_name):
             "거래금액":amt.replace(",","") if amt else None,
             "년":g("dealYear"),"월":g("dealMonth"),"일":g("dealDay"),
             "거래유형":g("dealingGbn"),
+            "해제여부":g("cdealType"),"해제일":g("cdealDay"),"동":g("aptDong"),
         })
     return records
 
@@ -105,6 +112,8 @@ def parse_rent(root, gu_name):
             "보증금":dep.replace(",","") if dep else None,
             "월세":mon.replace(",","") if mon else None,
             "년":g("dealYear"),"월":g("dealMonth"),"일":g("dealDay"),
+            "계약구분":g("contractType"),"갱신권사용":g("useRRRight"),
+            "종전보증금":(g("preDeposit") or "").replace(",","") or None,"종전월세":(g("preMonthlyRent") or "").replace(",","") or None,
         })
     return records
 
@@ -135,12 +144,30 @@ def save_csv(records, path):
     df = pd.DataFrame(records)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8-sig")
-    cutoff = (datetime.today() - timedelta(days=31 * DOCS_MONTHS)).strftime("%Y%m")
-    if path.stem >= cutoff:
-        docs_path = Path("docs") / path
-        docs_path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(docs_path, index=False, encoding="utf-8-sig")
     print(f"  저장: {path} ({len(df)}행)")
+
+TRADE_LEGACY_COLS = ["구","법정동","아파트명","전용면적","층","건축년도","거래금액","년","월","일","거래유형"]
+RENT_LEGACY_COLS  = ["구","법정동","아파트명","전용면적","층","건축년도","보증금","월세","년","월","일"]
+
+def export_docs(trade_dir, rent_dir):
+    """브라우저용 최근 12개월 복사본: 해제 거래/중복 제거 후, 화면이 쓰는 열만"""
+    cutoff = months_ago(DOCS_MONTHS - 1)
+    for src, dst_name, cleaner, cols, extra in ((trade_dir, "apt_trade", clean_trade, TRADE_LEGACY_COLS, []),
+                                                (rent_dir, "apt_rent", clean_rent, RENT_LEGACY_COLS, ["계약구분"])):
+        dst = Path("docs/data") / dst_name; dst.mkdir(parents=True, exist_ok=True)
+        keep = {f"{ym}.csv" for ym in [x for x in sorted(p.stem for p in src.glob("*.csv")) if x >= cutoff]}
+        for old in dst.glob("*.csv"):
+            if old.name not in keep: old.unlink()
+        for f in src.glob("*.csv"):
+            if f.stem < cutoff: continue
+            df = pd.read_csv(f, encoding="utf-8-sig", dtype=str)
+            df = cleaner(df)
+            df[[c for c in cols + extra if c in df.columns]].to_csv(dst / f.name, index=False, encoding="utf-8-sig")
+
+def months_ago(n):
+    t = datetime.today(); y, m = t.year, t.month - n
+    while m <= 0: y, m = y - 1, m + 12
+    return f"{y}{m:02d}"
 
 def clean_nan(obj):
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)): return 0
@@ -245,10 +272,12 @@ def make_daily_recap(trade_dir, rent_dir, days=7):
         for ym in yms:
             f = dir_ / f"{ym}.csv"
             if f.exists():
-                frames.append(pd.read_csv(f, encoding="utf-8-sig"))
+                frames.append(pd.read_csv(f, encoding="utf-8-sig", dtype=str))
         if not frames:
             return None
         df = pd.concat(frames, ignore_index=True)
+        df = clean_trade(df) if col == "거래금액" else clean_rent(df)
+        if col == "거래금액" and "거래유형" in df.columns: df = df[df["거래유형"] != "직거래"]
         df[col] = pd.to_numeric(df[col].astype(str).str.replace(",",""), errors="coerce")
         df["날짜"] = df["년"].astype(str)+"-"+df["월"].astype(str).str.zfill(2)+"-"+df["일"].astype(str).str.zfill(2)
         return df[(df["날짜"] >= start) & (df["날짜"] <= end)]
@@ -257,6 +286,7 @@ def make_daily_recap(trade_dir, rent_dir, days=7):
     if t is not None and len(t) > 0 and not t["거래금액"].isna().all():
         recap["trade"]["건수"] = len(t)
         recap["trade"]["평균가"] = round(float(t["거래금액"].mean()), 0)
+        recap["trade"]["중위가"] = round(float(t["거래금액"].median()), 0)
         m = t.loc[t["거래금액"].idxmax()]
         recap["trade"]["최고가"] = float(m["거래금액"])
         recap["trade"]["최고가_단지"] = f"{m['구']} {m['아파트명']}"
@@ -265,22 +295,28 @@ def make_daily_recap(trade_dir, rent_dir, days=7):
 
     r = load(rent_dir, "보증금")
     if r is not None and len(r) > 0:
+        r["월세"] = pd.to_numeric(r["월세"].astype(str).str.replace(",",""), errors="coerce")
+        rj = new_contracts_only(r[(r["월세"].isna()) | (r["월세"] == 0)])      # 전세만, 갱신 제외
         recap["rent"]["건수"] = len(r)
-        recap["rent"]["평균보증금"] = round(float(r["보증금"].mean()), 0) if not r["보증금"].isna().all() else 0
+        recap["rent"]["전세건수"] = len(rj)
+        recap["rent"]["평균보증금"] = round(float(rj["보증금"].mean()), 0) if len(rj) and not rj["보증금"].isna().all() else 0
+        recap["rent"]["중위보증금"] = round(float(rj["보증금"].median()), 0) if len(rj) and not rj["보증금"].isna().all() else 0
         g = r.groupby("구").size().reset_index(name="거래수")
         recap["rent"]["구별"] = g.sort_values("거래수", ascending=False).to_dict(orient="records")
 
     return recap
 
 def build_summary(trade_dir, rent_dir, out_path):
-    summary = {"trade":[],"rent":[],"jeonse_rate":[],"weekly_price":[],"weekly_gu":[],"daily_recap":{},"updated":datetime.today().strftime("%Y-%m-%d")}
+    summary = {"trade":[],"rent":[],"weekly_price":[],"weekly_gu":[],"daily_recap":{},"updated":datetime.today().strftime("%Y-%m-%d")}
 
+    export_docs(trade_dir, rent_dir)
     # 매매 요약
     for f in sorted(trade_dir.glob("*.csv")):
-        df = pd.read_csv(f, encoding="utf-8-sig")
+        df = clean_trade(pd.read_csv(f, encoding="utf-8-sig", dtype=str))      # 해제(취소) 거래 제거
         df["거래금액"] = pd.to_numeric(df["거래금액"].astype(str).str.replace(",",""), errors="coerce")
         df["전용면적"] = pd.to_numeric(df["전용면적"].astype(str), errors="coerce")
         df = df.dropna(subset=["거래금액","전용면적"])
+        if "거래유형" in df.columns: df = df[df["거래유형"] != "직거래"]      # 직거래(특수관계 가능) 제외
         ym = f.stem
         per_gu = []
         for gu in SEOUL_GU_CODES.keys():
@@ -311,6 +347,7 @@ def build_summary(trade_dir, rent_dir, out_path):
             "전체평균":round(float(all_prices.mean()),0) if len(all_prices) else 0,
             "전체중위":round(float(all_prices.median()),0) if len(all_prices) else 0,
             "거래수":len(df),
+            "평당중위":round(float((df["거래금액"]/df["전용면적"]*3.3058).median()),0) if len(df) else 0,
             "구별":sorted(per_gu, key=lambda x:x["평균가"], reverse=True),
             "면적별":size_gu,
             "국민평형":popular_gu,
@@ -318,12 +355,13 @@ def build_summary(trade_dir, rent_dir, out_path):
 
     # 전월세 요약
     for f in sorted(rent_dir.glob("*.csv")):
-        df = pd.read_csv(f, encoding="utf-8-sig")
+        df = clean_rent(pd.read_csv(f, encoding="utf-8-sig", dtype=str))
+        schema = has_new_schema_rent(df)
         df["보증금"] = pd.to_numeric(df["보증금"].astype(str).str.replace(",",""), errors="coerce")
         df["월세"]   = pd.to_numeric(df["월세"].astype(str).str.replace(",",""), errors="coerce")
         df["전용면적"] = pd.to_numeric(df["전용면적"].astype(str), errors="coerce")
         ym = f.stem
-        jeonse_df = df[(df["월세"].isna())|(df["월세"]==0)].dropna(subset=["보증금"])
+        jeonse_df = new_contracts_only(df[(df["월세"].isna())|(df["월세"]==0)].dropna(subset=["보증금"]))   # 갱신계약 제외
         per_gu_rent = []
         for gu in SEOUL_GU_CODES.keys():
             stats = gu_stats(jeonse_df[jeonse_df["구"]==gu]["보증금"])
@@ -343,26 +381,12 @@ def build_summary(trade_dir, rent_dir, out_path):
             "ym":ym,
             "평균보증금":round(float(filt_dep.mean()),0) if len(filt_dep) else 0,
             "평균월세":round(float(filt_mon.mean()),0) if len(filt_mon) else 0,
-            "거래수":len(df),
+            "거래수":len(df), "전세건수":int(len(jeonse_df)), "갱신제외":bool(schema),
             "구별전세":sorted(per_gu_rent, key=lambda x:x["평균가"], reverse=True),
             "국민평형전세":popular_rent,
         })
 
-    # 전세가율
-    if summary["trade"] and summary["rent"]:
-        last_trade = summary["trade"][-1]
-        last_rent  = summary["rent"][-1]
-        ym = last_trade["ym"]
-        trade_map = {d["구"]:d["중위가"] for d in last_trade["구별"]}
-        rent_map  = {d["구"]:d["중위가"] for d in last_rent["구별전세"]}
-        result = []
-        for gu in SEOUL_GU_CODES.keys():
-            t=trade_map.get(gu); r=rent_map.get(gu)
-            if t and r and t>0:
-                rate = round(r/t*100,1)
-                result.append({"구":gu,"평균매매가":t,"평균전세가":r,"전세가율":rate,"ym":ym,
-                    "신호":"매수고려" if rate>=70 else ("주의" if rate>=60 else "관망")})
-        summary["jeonse_rate"] = sorted(result, key=lambda x:x["전세가율"], reverse=True)
+    # 구별 전세가율은 build_analytics.py 가 단지 단위로 계산(jeonse_gu.json)
 
     # 주간 시세
     summary["weekly_price"], summary["weekly_gu"] = fetch_weekly_price()
