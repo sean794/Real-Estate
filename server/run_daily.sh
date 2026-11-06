@@ -16,6 +16,8 @@ TMP=$(mktemp)
   echo "--- 분석 ---"
   python3 scripts/build_analytics.py 2>&1 | tail -n 10
   echo "analytics exit: ${PIPESTATUS[0]}"
+  echo "--- 검증 ---"
+  python3 scripts/validate_data.py 2>&1 | tail -n 30
   free -m | sed -n '1,2p'
   echo "=== end ==="
 } 2>&1 | tee "$HOME/run_daily.live.log" > "$TMP"
