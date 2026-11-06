@@ -414,7 +414,7 @@
         <div class="card"><div class="card-title">월별 거래량</div><div class="card-sub">계약일 기준 · 옅은 막대는 신고가 덜 모인 최근 달</div><div class="chart-box"><canvas id="t-vol"></canvas></div></div>
         <div class="card"><div class="card-title">평당가: 매매 vs 전세</div><div class="card-sub">만원/평 · 확정된 달만 표시</div><div class="legend"><span><i style="background:var(--s1)"></i>매매</span><span><i style="background:var(--s2)"></i>전세</span></div><div class="chart-box"><canvas id="t-ppm"></canvas></div></div>
       </div>
-      <div class="card" style="margin-top:13px"><div class="card-title">전세가율 추이 (%)</div><div class="chart-box sm"><canvas id="t-rate"></canvas></div></div>
+      <div class="card" style="margin-top:13px"><div class="card-title">전세가율 추이 (%)</div><div class="card-sub">같은 단지·면적의 최근 3개월 매매 중위가 대비 신규 전세 중위가 · 구별 중위수</div><div class="chart-box sm"><canvas id="t-rate"></canvas></div></div>
     </div>
     <div class="section">
       <div class="card">
@@ -686,7 +686,7 @@ function renderTrends() {
     kpi("최근 확정 월 거래량", (d.vol[lastFull]||0).toLocaleString()+"건", TX.months[lastFull], "") +
     kpi("평당 매매가", (pyOf([last("ppm")])[0]||"–").toLocaleString()+"만", "", "") +
     kpi("평당 전세가", (pyOf([last("jppm")])[0]||"–").toLocaleString()+"만", "", "") +
-    kpi("전세가율", (last("rate")??"–")+"%", "갱신 제외 · 중위값 기준", "");
+    kpi("전세가율", (last("rate")??"–")+"%", "같은 단지 비교 · 최근 3개월", "");
   destroy("t-vol"); destroy("t-ppm"); destroy("t-rate");
   const s1=cv("--s1"), s2=cv("--s2");
   const vcol=TX.months.map((_,i)=> i>=partialIdx ? s1+"55" : s1);

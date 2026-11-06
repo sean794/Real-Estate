@@ -50,6 +50,7 @@ def build():
     recent_rent_months = set(rent_months[-4:])         # 최근 4개월(갱신 제외 신규 전세)
     gu_month_rent = {}      # (ym, gu|None) -> (median ppm, n)   (신규 전세만, 최신 스키마 월만)
     recent_rent = []
+    rent_frames = {}
     for ym in rent_months:
         d = clean_rent(pd.read_csv(RENT_DIR / f"{ym}.csv", encoding="utf-8-sig", dtype=str))
         if not has_new_schema_rent(d):
@@ -61,9 +62,10 @@ def build():
         gu_month_rent[(ym, None)] = (float(d["ppm"].median()), int(len(d))) if len(d) else (0.0, 0)
         for gu, g in d.groupby("구"):
             gu_month_rent[(ym, gu)] = (float(g["ppm"].median()), int(len(g)))
+        d["a"] = d["area"].round().astype(int)
+        rent_frames[ym] = d[["구", "법정동", "아파트명", "a", "dep"]]
         if ym in recent_rent_months:
-            d["a"] = d["area"].round().astype(int)
-            recent_rent.append(d[["구", "법정동", "아파트명", "a", "dep"]])
+            recent_rent.append(rent_frames[ym])
     rr = pd.concat(recent_rent, ignore_index=True) if recent_rent else pd.DataFrame(columns=["구", "법정동", "아파트명", "a", "dep"])
     jeonse = rr.groupby(key)["dep"].agg(["median", "count"]).rename(columns={"median": "j", "count": "jn"})
 
@@ -121,6 +123,25 @@ def build():
     while fi > 0 and cnt[fi] < 0.5 * cnt[fi - 1]:
         fi -= 1
     trends = {"months": months, "partial_from": months[fi + 1] if fi + 1 < len(months) else "999999", "gu": {}}
+    # 월별 전세가율: 같은 단지·면적끼리 최근 3개월(해당 월 포함) 매매 중위가 vs 전세 중위가, 구별 중위수(비교 가능한 단지 5개 이상)
+    mrate = {}
+    for i, ym in enumerate(months):
+        if ym not in rent_frames:
+            continue
+        win = months[max(0, i - 2): i + 1]
+        jw = pd.concat([rent_frames[m] for m in win if m in rent_frames], ignore_index=True)
+        jj = jw.groupby(key)["dep"].agg(j="median", jn="count")
+        tw = t_main[t_main["ym"].isin(win)].groupby(key)["price"].agg(p="median", n="count")
+        mm = tw.join(jj, how="inner")
+        mm = mm[(mm["n"] >= 2) & (mm["jn"] >= 2)]
+        mm["r"] = mm["j"] / mm["p"] * 100
+        mm = mm.reset_index()
+        for gu_, g_ in mm.groupby("구"):
+            if len(g_) >= 5:
+                mrate[(ym, gu_)] = round(float(g_["r"].median()), 1)
+        if len(mm) >= 30:
+            mrate[(ym, None)] = round(float(mm["r"].median()), 1)
+
     def series(gu):
         vol, ppm, jp, rate = [], [], [], []
         for ym in months:
@@ -131,7 +152,7 @@ def build():
             jr = gu_month_rent.get((ym, gu if gu else None))
             jpv = jr[0] if jr and jr[1] >= 5 else None
             jp.append(round(jpv, 1) if jpv else None)
-            rate.append(round(jpv / p * 100, 1) if jpv and p else None)
+            rate.append(mrate.get((ym, gu if gu else None)))
         return {"vol": vol, "ppm": ppm, "jppm": jp, "rate": rate}
     trends["gu"]["서울 전체"] = series(None)
     for gu in gus:
