@@ -1,36 +1,42 @@
-=== job 'status' (id 1793864215) start 2026-11-05 07:40:01 UTC ===
-Thu Nov  5 07:40:01 UTC 2026
-
-               total        used        free      shared  buff/cache   available
-Mem:             416         122          75           1         218         257
-Swap:           1023          73         950
-
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/root        20G  5.7G   14G  30% /
-
---- cron ---
-CRON_TZ=Asia/Seoul
-30 0 * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh
-*/5 * * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/poll.sh
-
---- 실행 중 ---
-
---- 데이터 ---
-매매 월 파일: 32개 (202404.csv ~ 202611.csv)
-전월세 월 파일: 32개
-백필 임시파일: 0
-
---- 마지막 수집 로그 끝 ---
-  ✔ 202404 백필 완료 (누적 호출 1200)
-  ⏸ 호출 한도 도달(자체 호출 상한) — 오늘은 여기까지, 다음 실행에서 이어서 진행
-백필 이번 실행: 24개월 완료, 호출 1200회, 남은 4개월
---- 분석 ---
-  complexes.json: 2778KB
-  new_highs.json: 46KB
-  gu_trends.json: 19KB
-단지×면적 11643건, 신고가 536건, 구 25개 × 32개월
-analytics exit: 0
-               total        used        free      shared  buff/cache   available
-Mem:             416         128         163           1         125         251
-=== end ===
-=== end 2026-11-05 07:40:01 UTC ===
+=== job 'probe_raw' (id 1793932751) start 2026-11-06 02:40:02 UTC ===
+== 매매 강동 202506 rows 988 totalCount 988
+fields: ['aptDong', 'aptNm', 'aptSeq', 'bonbun', 'bubun', 'buildYear', 'buyerGbn', 'cdealDay', 'cdealType', 'dealAmount', 'dealDay', 'dealMonth', 'dealYear', 'dealingGbn', 'estateAgentSggNm', 'excluUseAr', 'floor', 'jibun', 'landCd', 'landLeaseholdGbn', 'rgstDate', 'roadNm', 'roadNmBonbun', 'roadNmBubun', 'roadNmCd', 'roadNmSeq', 'roadNmSggCd', 'roadNmbCd', 'sggCd', 'slerGbn', 'umdCd', 'umdNm']
+cdealType [('', 871), ('O', 117)]
+cdealDay [('', 871), ('25.06.26', 7), ('25.06.16', 7), ('25.07.05', 6), ('25.06.25', 5), ('25.06.20', 5)]
+dealingGbn [('중개거래', 956), ('직거래', 32)]
+aptDong [('', 175), ('101', 88), ('102', 66), ('103', 46), ('104', 31), ('105', 26)]
+buyerGbn [('개인', 988)]
+slerGbn [('개인', 973), ('법인', 15)]
+완전동일(모든 필드) 중복 행: 3
+핵심필드 동일 중복 행: 101
+ 예시: [{'aptNm': '고덕롯데캐슬베네루체', 'aptDong': '708', 'excluUseAr': '84.146', 'floor': '4', 'dealAmount': '151,000', 'dealDay': '23', 'cdealType': '', 'cdealDay': '', 'dealingGbn': '중개거래', 'rgstDate': '25.12.23', 'jibun': '514'}, {'aptNm': '고덕롯데캐슬베네루체', 'aptDong': '', 'excluUseAr': '84.146', 'floor': '4', 'dealAmount': '151,000', 'dealDay': '23', 'cdealType': 'O', 'cdealDay': '25.11.18', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '514'}]
+ 예시: [{'aptNm': '현대2', 'aptDong': '102', 'excluUseAr': '69.17', 'floor': '10', 'dealAmount': '90,800', 'dealDay': '21', 'cdealType': '', 'cdealDay': '', 'dealingGbn': '중개거래', 'rgstDate': '25.07.15', 'jibun': '70-5'}, {'aptNm': '현대2', 'aptDong': '', 'excluUseAr': '69.17', 'floor': '10', 'dealAmount': '90,800', 'dealDay': '21', 'cdealType': 'O', 'cdealDay': '25.10.31', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '70-5'}]
+== 매매 강동 202610 rows 140 totalCount 140
+fields: ['aptDong', 'aptNm', 'aptSeq', 'bonbun', 'bubun', 'buildYear', 'buyerGbn', 'cdealDay', 'cdealType', 'dealAmount', 'dealDay', 'dealMonth', 'dealYear', 'dealingGbn', 'estateAgentSggNm', 'excluUseAr', 'floor', 'jibun', 'landCd', 'landLeaseholdGbn', 'rgstDate', 'roadNm', 'roadNmBonbun', 'roadNmBubun', 'roadNmCd', 'roadNmSeq', 'roadNmSggCd', 'roadNmbCd', 'sggCd', 'slerGbn', 'umdCd', 'umdNm']
+cdealType [('', 138), ('O', 2)]
+cdealDay [('', 138), ('26.11.03', 2)]
+dealingGbn [('중개거래', 137), ('직거래', 3)]
+aptDong [('', 140)]
+buyerGbn [('개인', 140)]
+slerGbn [('개인', 139), ('법인', 1)]
+완전동일(모든 필드) 중복 행: 0
+핵심필드 동일 중복 행: 2
+ 예시: [{'aptNm': '올림픽파크포레온', 'aptDong': '', 'excluUseAr': '59.99', 'floor': '26', 'dealAmount': '256,000', 'dealDay': '5', 'cdealType': '', 'cdealDay': '', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '633'}, {'aptNm': '올림픽파크포레온', 'aptDong': '', 'excluUseAr': '59.99', 'floor': '26', 'dealAmount': '256,000', 'dealDay': '5', 'cdealType': 'O', 'cdealDay': '26.11.03', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '633'}]
+ 예시: [{'aptNm': '신일유토빌(603-0)', 'aptDong': '', 'excluUseAr': '78.65', 'floor': '7', 'dealAmount': '104,000', 'dealDay': '3', 'cdealType': '', 'cdealDay': '', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '603'}, {'aptNm': '신일유토빌(603-0)', 'aptDong': '', 'excluUseAr': '78.65', 'floor': '7', 'dealAmount': '104,000', 'dealDay': '3', 'cdealType': 'O', 'cdealDay': '26.11.03', 'dealingGbn': '중개거래', 'rgstDate': '', 'jibun': '603'}]
+== 전월세 강동 202610 rows 970 totalCount 970
+fields: ['aptNm', 'aptSeq', 'buildYear', 'contractTerm', 'contractType', 'dealDay', 'dealMonth', 'dealYear', 'deposit', 'excluUseAr', 'floor', 'jibun', 'monthlyRent', 'preDeposit', 'preMonthlyRent', 'roadnm', 'roadnmbcd', 'roadnmbonbun', 'roadnmbubun', 'roadnmcd', 'roadnmseq', 'roadnmsggcd', 'sggCd', 'umdNm', 'useRRRight']
+contractType [('갱신', 508), ('신규', 442), ('', 20)]
+useRRRight [('', 654), ('사용', 316)]
+완전동일(모든 필드) 중복 행: 22
+핵심필드 동일 중복 행: 24
+ 예시: [{'aptNm': '선사현대아파트', 'excluUseAr': '59.64', 'floor': '1', 'dealDay': '2', 'jibun': '509', 'contractType': ''}, {'aptNm': '선사현대아파트', 'excluUseAr': '59.64', 'floor': '1', 'dealDay': '2', 'jibun': '509', 'contractType': '갱신'}]
+ 예시: [{'aptNm': '우암쎈스뷰', 'excluUseAr': '77.19', 'floor': '6', 'dealDay': '31', 'jibun': '463-18', 'contractType': '갱신'}, {'aptNm': '우암쎈스뷰', 'excluUseAr': '77.19', 'floor': '6', 'dealDay': '31', 'jibun': '463-18', 'contractType': '갱신'}]
+== 전월세 광진 202606 rows 318 totalCount 318
+fields: ['aptNm', 'aptSeq', 'buildYear', 'contractTerm', 'contractType', 'dealDay', 'dealMonth', 'dealYear', 'deposit', 'excluUseAr', 'floor', 'jibun', 'monthlyRent', 'preDeposit', 'preMonthlyRent', 'roadnm', 'roadnmbcd', 'roadnmbonbun', 'roadnmbubun', 'roadnmcd', 'roadnmseq', 'roadnmsggcd', 'sggCd', 'umdNm', 'useRRRight']
+contractType [('신규', 186), ('갱신', 131), ('', 1)]
+useRRRight [('', 251), ('사용', 67)]
+완전동일(모든 필드) 중복 행: 10
+핵심필드 동일 중복 행: 15
+ 예시: [{'aptNm': '센텀힐스한강', 'excluUseAr': '32.51', 'floor': '15', 'dealDay': '24', 'jibun': '587-62', 'contractType': ''}, {'aptNm': '센텀힐스한강', 'excluUseAr': '32.51', 'floor': '15', 'dealDay': '24', 'jibun': '587-62', 'contractType': '신규'}]
+ 예시: [{'aptNm': '구의강변우성아파트', 'excluUseAr': '84.76', 'floor': '16', 'dealDay': '13', 'jibun': '546-7', 'contractType': '갱신'}, {'aptNm': '구의강변우성아파트', 'excluUseAr': '84.76', 'floor': '16', 'dealDay': '13', 'jibun': '546-7', 'contractType': '갱신'}]
+=== end 2026-11-06 02:40:03 UTC ===
