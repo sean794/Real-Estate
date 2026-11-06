@@ -331,7 +331,7 @@
   <div class="page" id="page-jeonse">
     <div class="kpi-row" id="kpi-jeonse"></div>
     <div class="section">
-      <div class="info-box"><strong>전세가율</strong> = 전세가 ÷ 매매가 × 100. 70% 이상이면 매수 고려 신호예요.</div>
+      <div class="info-box"><strong>전세가율</strong> = 전세 보증금 ÷ 매매가 × 100. 같은 단지·면적의 최근 매매 중위가와 최근 전세 중위가를 비교한 뒤, 구별로 중위값을 냈어요(매매·전세 각 2건 이상인 단지만). 60% 이상 매수고려, 50% 이상 주의.</div>
       <div class="card"><table class="data-table" id="jeonse-table"></table></div>
     </div>
   </div>
@@ -1081,15 +1081,18 @@ function renderPopular() {
 }
 
 // ── 전세가율 ─────────────────────────────────────────
-function renderJeonse() {
-  const jData = S.jeonse_rate; if(!jData||!jData.length) return;
+async function renderJeonse() {
+  let jData = null;
+  try { const r = await fetch("data/jeonse_gu.json"); const j = await r.json(); jData = j.items.map(d=>({...d, 평균매매가:d.매매중위가, 평균전세가:d.전세중위가, ym:(j.updated||"").replace(/-/g,"").slice(0,6)})); } catch(e) {}
+  if(!jData||!jData.length) jData = S.jeonse_rate;
+  if(!jData||!jData.length) return;
   const buyN = jData.filter(d=>d.신호==="매수고려").length;
   const avgR = (jData.reduce((s,d)=>s+d.전세가율,0)/jData.length).toFixed(1);
   let html = "";
-  html += kpi("서울 평균 전세가율", avgR+"%", "", "");
-  html += kpi("매수고려 구역", buyN+"개 구", "70% 이상", "");
+  html += kpi("구별 중위 전세가율 평균", avgR+"%", "", "");
+  html += kpi("매수고려 구역", buyN+"개 구", "60% 이상", "");
   html += kpi("전세가율 1위", jData[0].구, jData[0].전세가율+"%", "");
-  html += kpi("기준 월", `${jData[0].ym?.slice(0,4)||""}년 ${jData[0].ym?.slice(4)||""}월`, "", "");
+  html += kpi("산출 방식", "단지 단위", "같은 단지·면적 비교", "");
   document.getElementById("kpi-jeonse").innerHTML = html;
   let tbl = `<tr><th>순위</th><th>자치구</th><th>전세가율</th><th>매매 중위가</th><th>전세 중위가</th><th>신호</th></tr>`;
   jData.forEach((d,i) => {

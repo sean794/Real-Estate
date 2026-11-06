@@ -137,6 +137,22 @@ def build():
         (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"  {name}: {(OUT / name).stat().st_size/1024:.0f}KB")
     meta = {"updated": datetime.today().strftime("%Y-%m-%d"), "months": months}
+    # 구별 전세가율: 같은 단지·면적끼리 비교한 값(매매·전세 각 2건 이상)의 중위수
+    import statistics as _st
+    jg = {}
+    for r in complexes:
+        if r["rate"] is not None and r["jn"] >= 2 and r["n"] >= 2:
+            jg.setdefault(r["gu"], []).append(r)
+    jeonse_gu = []
+    for gu_, rs in jg.items():
+        if len(rs) < 5:
+            continue
+        rt = round(_st.median(x["rate"] for x in rs), 1)
+        jeonse_gu.append({"구": gu_, "전세가율": rt, "단지수": len(rs),
+                          "매매중위가": int(_st.median(x["base"] for x in rs)), "전세중위가": int(_st.median(x["j"] for x in rs)),
+                          "신호": "매수고려" if rt >= 60 else ("주의" if rt >= 50 else "관망")})
+    jeonse_gu.sort(key=lambda x: x["전세가율"], reverse=True)
+    dump("jeonse_gu.json", {**meta, "items": jeonse_gu})
     dump("complexes.json", {**meta, "items": complexes})
     dump("new_highs.json", {**meta, "items": highs[:300]})
     dump("gu_trends.json", trends)
