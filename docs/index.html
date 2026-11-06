@@ -958,13 +958,13 @@ function renderTxTable() {
 
   // 헤더
   const tradeCols = ["아파트명","법정동","전용면적","층","건축년도","거래금액","년","월","일","거래유형"];
-  const rentCols  = ["아파트명","법정동","전용면적","층","건축년도","보증금","월세","년","월","일"];
+  const rentCols  = ["아파트명","법정동","전용면적","층","건축년도","보증금","월세","계약구분","년","월","일"];
   const cols = isTrade ? tradeCols : rentCols;
 
   const colLabels = {
     "아파트명":"아파트명","법정동":"법정동","전용면적":"면적(㎡)","층":"층",
     "건축년도":"건축년도","거래금액":"거래금액","보증금":"보증금","월세":"월세",
-    "년":"년","월":"월","일":"일","거래유형":"거래유형"
+    "년":"년","월":"월","일":"일","거래유형":"거래유형","계약구분":"신규/갱신"
   };
   const priceCols = ["거래금액","보증금","월세"];
 
@@ -1001,19 +1001,23 @@ function renderTxTable() {
 function renderTxStat() {
   const isTrade = currentTxType === "trade";
   const priceKey = isTrade ? "거래금액" : "보증금";
-  const prices = txFiltered.map(r=>parseFloat(r[priceKey]||0)).filter(v=>v>0);
+  // 시세 통계: 매매는 직거래 제외, 전월세는 월세 없는 전세 + 갱신계약 제외(신규)
+  const basis = txFiltered.filter(r => isTrade ? r["거래유형"]!=="직거래" : (!(parseFloat(r["월세"]||0)>0) && r["계약구분"]!=="갱신"));
+  const prices = basis.map(r=>parseFloat(r[priceKey]||0)).filter(v=>v>0);
   const avg = prices.length ? prices.reduce((s,v)=>s+v,0)/prices.length : 0;
   const sorted = [...prices].sort((a,b)=>a-b);
-  const med = sorted.length ? sorted[Math.floor(sorted.length/2)] : 0;
+  const h = sorted.length>>1;
+  const med = sorted.length ? (sorted.length%2 ? sorted[h] : (sorted[h-1]+sorted[h])/2) : 0;
   const mx  = sorted.length ? sorted[sorted.length-1] : 0;
   const mn  = sorted.length ? sorted[0] : 0;
 
   document.getElementById("tx-stat-bar").innerHTML = `
     <div class="stat-item"><span>총</span><strong>${txFiltered.length.toLocaleString()}건</strong></div>
-    <div class="stat-item"><span>평균가</span><strong>${fmtWon(avg)}</strong></div>
+    <div class="stat-item"><span>${isTrade?"평균가":"전세 평균"}</span><strong>${fmtWon(avg)}</strong></div>
     <div class="stat-item"><span>중위가</span><strong>${fmtWon(med)}</strong></div>
     <div class="stat-item"><span>최고가</span><strong>${fmtWon(mx)}</strong></div>
     <div class="stat-item"><span>최저가</span><strong>${fmtWon(mn)}</strong></div>
+    <div class="stat-item"><span>기준</span><strong>${isTrade?"직거래 제외":"전세·신규계약"} ${prices.length.toLocaleString()}건</strong></div>
     <div class="stat-item"><span>${txSelectedGu}</span><strong>${txCurrentMonth.slice(0,4)}년 ${txCurrentMonth.slice(4)}월</strong></div>
   `;
 }
