@@ -27,10 +27,11 @@ def clean_trade(df):
         keep["_c"] = keep["_k"].map(n_cancel).fillna(0)
         keep = keep[keep["_n"] >= keep["_c"]]
         return keep.drop(columns=["_k", "_n", "_c"])
-    # 구 스키마: 동일 행 k개 중 홀수면 1개, 짝수면 0개가 유효(원본+해제 쌍)
+    # 구 스키마: 동일 행이 2~4개면 원본+해제 쌍으로 보고 홀수면 1개, 짝수면 0개가 유효.
+    # 5개 이상 똑같은 행은 한 단지의 같은 층 여러 호실 일괄 거래(시행사 물량 등)라 전부 유효로 둠.
     df["_n"] = df.groupby("_k").cumcount()
     df["_size"] = df.groupby("_k")["_k"].transform("size")
-    keep = df[(df["_n"] < (df["_size"] % 2))]
+    keep = df[(df["_size"] >= 5) | (df["_n"] < (df["_size"] % 2))]
     return keep.drop(columns=["_k", "_n", "_size"])
 
 def has_new_schema_trade(df):
