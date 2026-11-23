@@ -195,6 +195,22 @@
     .data-table td:first-child .tag{display:block;margin:3px 0 0;width:fit-content;}
     .data-table td,.data-table th{padding:8px 7px;}
   }
+  /* ── 추가 기능 ── */
+  .hint{font-size:.74rem;color:var(--muted);align-self:center;}
+  .star{background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);padding:0 4px 0 0;line-height:1;}
+  .star.on{color:var(--amber);}
+  tr.clk{cursor:pointer;} tr.clk:hover td{background:rgba(255,255,255,.03);}
+  .dm{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;}
+  .dm[hidden]{display:none;}
+  .dm-box{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:100%;max-width:820px;}
+  .dm-close{position:absolute;right:12px;top:10px;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:6px;}
+  .dm h2{font-size:1.05rem;color:var(--text);margin-bottom:2px;padding-right:32px;}
+  .dm-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+  .dm-chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.72rem;color:var(--muted);}
+  .dm-chip b{display:block;font-size:.95rem;color:var(--text);margin-top:2px;font-weight:600;}
+  .plan-big{font-size:1.5rem;font-weight:700;color:var(--text);}
+  .plan-big small{font-size:.8rem;color:var(--muted);font-weight:400;margin-left:8px;}
+  .neg{color:var(--red);} 
 </style>
 </head>
 <body>
@@ -212,6 +228,10 @@
   <button class="nav-tab" data-page="budget">예산 필터</button>
   <button class="nav-tab" data-page="candidates">후보 단지</button>
   <button class="nav-tab" data-page="trends">구별 추이</button>
+  <button class="nav-tab" data-page="renewal">전세 갱신</button>
+  <button class="nav-tab" data-page="drops">하락·취소</button>
+  <button class="nav-tab" data-page="plan">자금 계획</button>
+  <button class="nav-tab" data-page="watch">관심 단지</button>
 </div>
 
 <div id="loading">데이터 불러오는 중...</div>
@@ -424,6 +444,94 @@
     </div>
   </div>
 
+  <!-- ── 8. 전세 갱신 ── -->
+  <div class="page" id="page-renewal">
+    <div class="filter-bar">
+      <select id="rn-gu"></select>
+      <span class="hint">전세 갱신계약의 보증금이 종전 계약 대비 얼마나 올랐는지 (순수 전세만, 월세 낀 계약 제외)</span>
+    </div>
+    <div class="kpi-row" id="rn-kpi"></div>
+    <div class="section">
+      <div class="info-box"><strong>읽는 법</strong> · 갱신청구권을 쓰면 인상률은 법정 상한 5%에 묶여요. 그래서 <strong>5% 초과 비율</strong>(청구권 없이 합의로 더 올린 비율)과 <strong>동결·인하 비율</strong>이 시장 온도를 보여줍니다. 5% 초과가 늘면 임대인이 시세를 반영해 올리는 중 = 전세 강세, 동결·인하가 늘면 약세 신호.</div>
+      <div class="two-col">
+        <div class="card"><div class="card-title">평균 인상률 (%)</div><div class="card-sub">갱신 건의 (새 보증금 ÷ 종전 보증금 − 1) 평균 · 확정된 달만</div><div class="chart-box sm"><canvas id="rn-mean"></canvas></div></div>
+        <div class="card"><div class="card-title">5% 초과 인상 비율 (%)</div><div class="card-sub">상한을 넘겨 올린 갱신 비율</div><div class="chart-box sm"><canvas id="rn-over"></canvas></div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="card-title" id="rn-tt">구별 갱신 인상률</div>
+        <div class="table-wrap"><table class="data-table" id="rn-table"></table></div>
+        <div class="small-note">• 종전 보증금 대비 0.5배~2배를 벗어난 값은 입력 오류로 보고 뺐습니다. 구별 값은 최근 3개 확정월 합산(30건 이상인 구만).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 9. 하락·취소 ── -->
+  <div class="page" id="page-drops">
+    <div class="section" style="padding-top:20px">
+      <div class="card">
+        <div class="card-title">직전보다 크게 싼 거래 (급매·조정 후보)</div>
+        <div class="card-sub">최근 90일 중개거래 중, 같은 단지·면적의 직전 1년 중위가보다 10% 이상 낮은 건 (직전 거래 3건 이상)</div>
+        <div class="cand-filters">
+          <label>구<select id="d-gu"><option value="">전체</option></select></label>
+          <label>최소 하락률<select id="d-min"><option value="10">10% 이상</option><option value="15">15% 이상</option><option value="20">20% 이상</option></select></label>
+          <label>의심 거래<select id="d-sus"><option value="hide">30% 초과 하락은 숨김</option><option value="show">모두 보기</option></select></label>
+        </div>
+        <div id="d-summary" class="small-note"></div>
+        <div class="table-wrap" style="margin-top:8px"><table class="data-table" id="d-table"></table></div>
+        <div class="small-note">• 낮은 층·특수관계(증여성) 거래도 섞여 있어요. 30% 넘게 싼 건 대개 특수거래나 입력 오류라 기본으로 숨깁니다. 행을 누르면 그 단지 거래 이력을 볼 수 있어요.</div>
+      </div>
+    </div>
+    <div class="filter-bar"><select id="cx-gu"></select><span class="hint">해제(취소)된 거래 비율 = 해제 건 ÷ 체결 건</span></div>
+    <div class="section">
+      <div class="card"><div class="card-title">매매 계약 해제 비율 (%)</div><div class="card-sub">계약월 기준 · 취소는 늦게 반영돼서 최근 2개월은 낮게 보이므로 뺐어요</div><div class="chart-box sm"><canvas id="cx-chart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ── 10. 자금 계획 ── -->
+  <div class="page" id="page-plan">
+    <div class="section" style="padding-top:20px">
+      <div class="card">
+        <div class="card-title">내 자금으로 살 수 있는 최대 매매가</div>
+        <div class="info-box">대출 규제 값은 기본값(규제지역 LTV 40%, 주택가격별 한도 15억 이하 6억 · 15~25억 4억 · 25억 초과 2억, DSR 40%, 수도권 스트레스 가산금리 3%p)이며 정책이 바뀌면 직접 고치세요. 입력은 이 브라우저에만 저장됩니다. 참고용 계산이고 실제 한도는 은행 심사를 따릅니다.</div>
+        <div class="cand-filters" id="pl-inputs">
+          <label>보유 현금 (억)<input type="number" id="pl-cash" step="0.1" min="0" placeholder="예: 3"></label>
+          <label>연 소득 합계 (만원)<input type="number" id="pl-inc" step="100" min="0" placeholder="비우면 DSR 미적용"></label>
+          <label>기존 대출 연 원리금 (만원)<input type="number" id="pl-debt" step="100" min="0" value="0"></label>
+          <label>대출금리 (%)<input type="number" id="pl-rate" step="0.1" value="4.0"></label>
+          <label>스트레스 가산 (%p)<input type="number" id="pl-stress" step="0.1" value="3.0"></label>
+          <label>만기 (년)<input type="number" id="pl-years" step="5" value="30"></label>
+          <label>LTV (%)<input type="number" id="pl-ltv" step="5" value="40"></label>
+          <label>DSR (%)<input type="number" id="pl-dsr" step="5" value="40"></label>
+          <label>가격별 한도<select id="pl-cap"><option value="1">적용 (6억/4억/2억)</option><option value="0">미적용</option></select></label>
+        </div>
+        <div id="pl-result"></div>
+        <div class="table-wrap" style="margin-top:12px"><table class="data-table" id="pl-table"></table></div>
+        <div class="small-note">• 필요 현금 = 매매가 − 대출 + 취득세·지방교육세 + 중개보수 + 기타(법무·채권 등 0.3%). 취득세는 85㎡ 이하 1주택 기준(6억 이하 1% ~ 9억 초과 3%), 중개보수는 상한요율 단순화.<br>• 월 상환액은 실제 금리 기준 원리금균등, DSR 한도는 스트레스 금리 기준으로 계산합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 11. 관심 단지 ── -->
+  <div class="page" id="page-watch">
+    <div class="section" style="padding-top:20px">
+      <div class="card">
+        <div class="card-title">관심 단지</div>
+        <div class="card-sub">후보 단지·하락 거래·신고가 표에서 ☆를 누르면 담겨요 · 이 브라우저에만 저장 · 담은 시점 가격 대비 변동을 보여줍니다</div>
+        <div class="table-wrap"><table class="data-table" id="w-table"></table></div>
+        <div class="small-note">• 담은 시점 가격 = 담을 때의 최근 6개월 매매 중위가(없으면 최근 거래가). 현재 = 지금 기준 같은 값. 행을 누르면 거래 이력 차트가 열려요.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="dm" class="dm" hidden>
+  <div class="dm-box" role="dialog" aria-modal="true" aria-labelledby="dm-title">
+    <button class="dm-close" id="dm-close" aria-label="닫기">✕</button>
+    <div id="dm-body"></div>
+  </div>
 </div>
 
 <script>
@@ -460,6 +568,11 @@ async function load() {
     document.getElementById("loading").style.display = "none";
     document.getElementById("main-content").style.display = "block";
     document.getElementById("updated-badge").textContent = `업데이트: ${S.updated}`;
+    fetch("data/status.json").then(r => r.ok ? r.json() : null).then(j => {   // 서버 검증 결과를 배지에 표시
+      const b = document.getElementById("updated-badge"), age = Math.floor((Date.now() - new Date(S.updated + "T00:00:00+09:00")) / 864e5);
+      if (j && j.fail > 0) { b.textContent += ` · ⚠ 검증 실패 ${j.fail}건`; b.style.color = "var(--red)"; b.title = (j.failed || []).join("\n"); }
+      else if (age >= 3) { b.textContent += ` · ⚠ ${age}일째 갱신 없음`; b.style.color = "var(--red)"; }
+    }).catch(() => {});
 
     // 월 셀렉트 세팅
     const monthSels = ["month-select", "tx-month-select"];
@@ -503,6 +616,10 @@ document.querySelectorAll(".nav-tab").forEach(btn => {
     document.getElementById("page-"+btn.dataset.page).classList.add("active");
     if (btn.dataset.page === "candidates") initCandidates();
     if (btn.dataset.page === "trends") initTrends();
+    if (btn.dataset.page === "renewal") initRenewal();
+    if (btn.dataset.page === "drops") initDrops();
+    if (btn.dataset.page === "plan") initPlan();
+    if (btn.dataset.page === "watch") initWatch();
   });
 });
 
@@ -566,10 +683,7 @@ async function initCandidates() {
   const box = document.getElementById("c-summary");
   box.textContent = "단지 데이터 불러오는 중...";
   try {
-    const [c, h] = await Promise.all([fetch("data/complexes.json"), fetch("data/new_highs.json")]);
-    if (!c.ok) throw new Error();
-    CX = (await c.json()).items;
-    HX = h.ok ? (await h.json()).items : [];
+    await loadCX();
   } catch(e) { box.textContent = "단지 데이터가 아직 없습니다. 서버가 다음에 수집을 돌리면 생깁니다."; return; }
   const gsel = document.getElementById("c-gu");
   GU_LIST.forEach(g => { const o=document.createElement("option"); o.value=g; o.textContent=g; gsel.appendChild(o); });
@@ -630,8 +744,8 @@ function renderCandidates() {
   document.getElementById("c-summary").textContent = `조건에 맞는 단지·평형 ${rows.length.toLocaleString()}건 (상위 150건 표시)`;
   const heads=[["name","단지"],["a","전용(평)"],["last","최근 거래"],["chg","직전 대비"],["ret","12개월"],["high","최고가"],["j","전세"],["rate","전세가율"],["gap","갭"],["built","건축"],["n","거래수"]];
   const th = "<tr>"+heads.map(([k,l])=>`<th data-k="${k}" class="${candCol&&candCol.k===k?"sort-"+candCol.dir:""}">${l}</th>`).join("")+"</tr>";
-  const body = rows.slice(0,150).map(x => `<tr>
-    <td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td>
+  const body = rows.slice(0,150).map(x => `<tr ${rowAttr(x)}>
+    <td>${starHtml(x)}<strong>${esc(x.name)}</strong><span class="tag">${x.gu} ${x.dong}</span></td>
     <td>${x.a}㎡ (${x.py}평)</td>
     <td class="price">${fmtEok(x.last[0])}<span class="tag">${x.last[1].slice(2)}${x.last[2]!=null?` · ${x.last[2]}층`:""}</span></td>
     <td>${pctHtml(x.chg_prev)}</td><td>${pctHtml(x.ret12)}</td>
@@ -650,7 +764,7 @@ function renderHighs(f) {
   const max = parseFloat(v("c-max"))*10000 || Infinity, gu=v("c-gu"), amin=parseFloat(v("c-amin"))||0, amax=parseFloat(v("c-amax"))||999, q=v("c-q").trim();
   const list = (HX||[]).filter(x => x.price<=max && (!gu||x.gu===gu) && x.a>=amin && x.a<=amax && (!q||x.name.includes(q))).slice(0,60);
   const th = "<tr><th>단지</th><th>전용</th><th>거래일</th><th>신고가</th><th>직전 최고가</th><th>상승</th><th>층</th></tr>";
-  const body = list.map(x => `<tr><td><strong>${x.name}</strong><span class="tag">${x.gu} ${x.dong}</span></td><td>${x.a}㎡</td><td>${x.date.slice(5)}</td>
+  const body = list.map(x => `<tr ${rowAttr(x)}><td>${starHtml(x)}<strong>${esc(x.name)}</strong><span class="tag">${x.gu} ${x.dong}</span></td><td>${x.a}㎡</td><td>${x.date.slice(5)}</td>
     <td class="price">${fmtEok(x.price)}</td><td>${fmtEok(x.prev_high)}</td><td>${pctHtml(x.jump)}</td><td>${x.floor??"–"}</td></tr>`).join("");
   document.getElementById("h-table").innerHTML = th + (body || `<tr><td colspan="7" class="empty">최근 30일 신고가 없음</td></tr>`);
 }
@@ -1145,6 +1259,280 @@ function runBudget() {
       <div class="budget-price">중위가 ${fmtWon(r.가격)}</div>
       <div class="budget-detail">${r.거래수}건 · ${r.면적}</div>
     </div>`).join("");
+}
+
+// ══ 추가 기능: 공통(관심·상세) / 갱신 / 하락·취소 / 자금 계획 ═══════════
+const APP_V = "2026-11-23.1";
+const _fetch = window.fetch.bind(window);
+window.fetch = (u, o) => _fetch(u, (typeof u === "string" && u.startsWith("data/")) ? {cache:"no-cache", ...o} : o);
+try {  // 새 버전이 배포됐는데 옛 화면이 캐시돼 있으면 한 번만 새로고침
+  _fetch("version.json", {cache:"no-store"}).then(r => r.ok ? r.json() : null).then(j => {
+    if (j && j.v && j.v !== APP_V && sessionStorage.getItem("reloaded_for") !== j.v) { sessionStorage.setItem("reloaded_for", j.v); location.reload(); }
+  }).catch(()=>{});
+} catch(e) {}
+
+const ckey = x => `${x.gu}|${x.dong}|${x.name}|${x.a}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let WL = [];
+try { WL = JSON.parse(lsGet("watch_v1") || "[]"); if (!Array.isArray(WL)) WL = []; } catch(e) { WL = []; }
+const inWL = k => WL.some(w => w.k === k);
+const starHtml = x => { const k = ckey(x), on = inWL(k); return `<button class="star${on?" on":""}" data-k="${encodeURIComponent(k)}" title="관심 단지" aria-label="관심 단지">${on?"★":"☆"}</button>`; };
+const rowAttr = x => `class="clk" data-k="${encodeURIComponent(ckey(x))}"`;
+
+let cxP = null, _cxm = null, _cxmSrc = null;
+function loadCX() {
+  if (!cxP) cxP = Promise.all([fetch("data/complexes.json"), fetch("data/new_highs.json")]).then(async ([c, h]) => {
+    if (!c.ok) throw new Error("no complexes");
+    CX = (await c.json()).items; HX = h.ok ? (await h.json()).items : [];
+  }).catch(e => { cxP = null; throw e; });
+  return cxP;
+}
+function cxMap() { if (!_cxm || _cxmSrc !== CX) { _cxm = new Map((CX||[]).map(x => [ckey(x), x])); _cxmSrc = CX; } return _cxm; }
+
+async function toggleStar(btn) {
+  const k = decodeURIComponent(btn.dataset.k);
+  let price = null;
+  try { await loadCX(); const it = cxMap().get(k); if (it) price = it.base ?? it.last[0]; } catch(e) {}
+  const i = WL.findIndex(w => w.k === k);
+  if (i >= 0) WL.splice(i, 1); else WL.push({k, p: price, d: new Date().toISOString().slice(0,10)});
+  lsSet("watch_v1", JSON.stringify(WL));
+  document.querySelectorAll(".star").forEach(b => { if (b.dataset.k === btn.dataset.k) { const on = inWL(k); b.classList.toggle("on", on); b.textContent = on ? "★" : "☆"; } });
+  if (document.getElementById("page-watch").classList.contains("active")) renderWatch();
+}
+document.addEventListener("click", e => {
+  const s = e.target.closest(".star"); if (s) { e.stopPropagation(); toggleStar(s); return; }
+  const r = e.target.closest("tr.clk[data-k]"); if (r) openDetail(decodeURIComponent(r.dataset.k));
+});
+
+// ── 단지 상세 (거래 이력 차트) ──
+const CXH = {};
+const ymd2ms = n => Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100 - 1, n%100);
+const ymd2s = n => { const s = String(n); return `${s.slice(2,4)}.${s.slice(4,6)}.${s.slice(6,8)}`; };
+const med = a => { if (!a.length) return null; const s = [...a].sort((x,y)=>x-y), m = s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+const todayN = () => { const d = new Date(); return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); };
+const daysAgoN = n => { const d = new Date(Date.now() - n*864e5); return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); };
+
+function closeDetail() { destroy("dm-chart"); document.getElementById("dm").hidden = true; document.body.style.overflow = ""; }
+document.getElementById("dm-close").addEventListener("click", closeDetail);
+document.getElementById("dm").addEventListener("click", e => { if (e.target.id === "dm") closeDetail(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !document.getElementById("dm").hidden) closeDetail(); });
+
+async function openDetail(key) {
+  const [gu, dong, name, a] = key.split("|");
+  const dm = document.getElementById("dm"), body = document.getElementById("dm-body");
+  dm.hidden = false; document.body.style.overflow = "hidden";
+  body.innerHTML = `<h2>${esc(name)}</h2><div class="card-sub">거래 이력 불러오는 중...</div>`;
+  try {
+    if (!CXH[gu]) { const r = await fetch(`data/cx/${encodeURIComponent(gu)}.json`); if (!r.ok) throw new Error(); CXH[gu] = await r.json(); }
+    const h = CXH[gu][`${dong}|${name}|${a}`]; if (!h) throw new Error("none");
+    let it = null; try { await loadCX(); it = cxMap().get(key) || null; } catch(e) {}
+    renderDetailModal({gu, dong, name, a:+a}, h, it);
+  } catch(e) { body.innerHTML = `<h2>${esc(name)}</h2><div class="empty">거래 이력을 불러오지 못했어요.</div>`; }
+}
+
+function renderDetailModal(x, h, it) {
+  const T = h.t || [], J = h.j || [];
+  const body = document.getElementById("dm-body");
+  const last = T[T.length-1], hi = T.reduce((m, r) => (!m || r[1] > m[1]) ? r : m, null);
+  const r12 = T.filter(r => r[0] >= daysAgoN(365)).length;
+  const base = med(T.filter(r => r[0] >= daysAgoN(180)).map(r => r[1]));
+  const jr = med(J.filter(r => r[0] >= daysAgoN(120)).map(r => r[1]));
+  const chips = [
+    ["최근 거래", last ? `${fmtEok(last[1])}` : "–", last ? `${ymd2s(last[0])}${last[2]!=null?` · ${last[2]}층`:""}` : ""],
+    ["최고가", hi ? fmtEok(hi[1]) : "–", hi ? ymd2s(hi[0]) : ""],
+    ["최근 6개월 중위", base ? fmtEok(base) : "–", ""],
+    ["최근 1년 거래", r12 + "건", ""],
+    ["신규 전세 중위(4개월)", jr ? fmtEok(jr) : "–", ""],
+    ["전세가율", it && it.rate != null ? it.rate + "%" : "–", it && it.gap != null ? "갭 " + fmtEok(it.gap) : ""],
+  ];
+  const sub = `${esc(x.gu)} ${esc(x.dong)} · 전용 ${x.a}㎡${it ? ` (${it.py}평)` : ""}${it && it.built ? ` · ${it.built}년` : ""}`;
+  const list = (rows, cols, n) => rows.slice(-n).reverse().map(r => "<tr>" + cols(r) + "</tr>").join("");
+  body.innerHTML = `
+    <h2>${starHtml(x)}${esc(x.name)}</h2><div class="card-sub">${sub}</div>
+    <div class="dm-chips">${chips.map(c => `<div class="dm-chip">${c[0]}<b>${c[1]}</b>${c[2]||"&nbsp;"}</div>`).join("")}</div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>매매 (점: 거래, 선: 월 중위)</span><span><i style="background:var(--s2)"></i>신규 전세 보증금</span></div>
+    <div class="chart-box"><canvas id="dm-chart"></canvas></div>
+    <details class="twin"><summary>거래 목록 보기</summary>
+      <table><tr><th>매매 계약일</th><th>가격</th><th>층</th></tr>${list(T, r => `<td>${ymd2s(r[0])}</td><td>${fmtEok(r[1])}</td><td>${r[2]??"–"}</td>`, 20)}</table>
+      <table style="margin-top:10px"><tr><th>전세 계약일</th><th>보증금</th></tr>${list(J, r => `<td>${ymd2s(r[0])}</td><td>${fmtEok(r[1])}</td>`, 12)}</table>
+    </details>
+    <div class="small-note">직거래·해제 거래 제외 · 전세는 갱신 제외 신규 계약만(최근 18개월)</div>`;
+  destroy("dm-chart");
+  const s1 = cv("--s1"), s2 = cv("--s2");
+  const tp = T.map(r => ({x: ymd2ms(r[0]), y: r[1], f: r[2]}));
+  const jp = J.map(r => ({x: ymd2ms(r[0]), y: r[1]}));
+  const byM = {}; T.forEach(r => { const m = Math.floor(r[0]/100); (byM[m] = byM[m] || []).push(r[1]); });
+  const ml = Object.keys(byM).sort().map(m => ({x: Date.UTC(+m.slice(0,4), +m.slice(4)-1, 15), y: med(byM[m])}));
+  const o = cOpts("");
+  o.interaction = {mode: "nearest", intersect: true};
+  o.plugins.tooltip.callbacks = {label: c => ` ${c.dataset.label}  ${fmtEok(c.raw.y)}${c.raw.f != null ? " · " + c.raw.f + "층" : ""}`,
+    title: i => { const d = new Date(i[0].raw.x); return `${d.getUTCFullYear()}.${String(d.getUTCMonth()+1).padStart(2,"0")}.${String(d.getUTCDate()).padStart(2,"0")}`; }};
+  const all = tp.concat(jp); const xs = all.map(p => p.x);
+  o.scales.x = {type: "linear", min: Math.min(...xs), max: Math.max(...xs), grid: {display: false}, border: {color: cv("--grid")},
+    ticks: {color: cv("--muted"), font: {size: 11}, maxTicksLimit: window.innerWidth < 600 ? 4 : 7, callback: v => { const d = new Date(v); return `${String(d.getUTCFullYear()).slice(2)}.${String(d.getUTCMonth()+1).padStart(2,"0")}`; }}};
+  o.scales.y.ticks.callback = v => (v/10000).toFixed(v % 10000 ? 1 : 0) + "억";
+  charts["dm-chart"] = new Chart(document.getElementById("dm-chart"), {type: "scatter", data: {datasets: [
+    {label: "매매", data: tp, backgroundColor: s1 + "80", borderColor: s1 + "80", pointRadius: 3, pointHoverRadius: 5, borderWidth: 0},
+    {label: "월 중위", data: ml, showLine: true, borderColor: s1, backgroundColor: s1, pointRadius: 0, pointHoverRadius: 0, borderWidth: 2, tension: 0, hitRadius: 0},
+    {label: "신규 전세", data: jp, backgroundColor: s2 + "99", borderColor: s2 + "99", pointRadius: 3, pointHoverRadius: 5, borderWidth: 0}]}, options: o});
+}
+
+// ── 관심 단지 ──
+async function initWatch() {
+  const t = document.getElementById("w-table");
+  if (!CX) t.innerHTML = `<tr><td class="empty">불러오는 중...</td></tr>`;
+  try { await loadCX(); } catch(e) { t.innerHTML = `<tr><td class="empty">단지 데이터가 아직 없습니다.</td></tr>`; return; }
+  renderWatch();
+}
+function renderWatch() {
+  const t = document.getElementById("w-table");
+  if (!CX) return;
+  if (!WL.length) { t.innerHTML = `<tr><td class="empty">아직 담은 단지가 없어요. 후보 단지 탭에서 ☆를 눌러 담아보세요.</td></tr>`; return; }
+  const m = cxMap(), hm = new Map((HX||[]).map(h => [ckey(h), h]));
+  const th = "<tr><th>단지</th><th>전용</th><th>담은 날</th><th>담은 시점</th><th>현재</th><th>변동</th><th>최근 거래</th><th>전세가율</th><th>신고가</th></tr>";
+  const body = WL.map(w => {
+    const [gu, dong, name, a] = w.k.split("|"), x = m.get(w.k), stub = {gu, dong, name, a: +a};
+    if (!x) return `<tr ${rowAttr(stub)}><td>${starHtml(stub)}<strong>${esc(name)}</strong><span class="tag">${esc(gu)} ${esc(dong)}</span></td><td>${a}㎡</td><td>${w.d.slice(2)}</td><td colspan="6" class="small-note">최근 1년 거래가 없어 현재 값을 계산할 수 없어요</td></tr>`;
+    const cur = x.base ?? x.last[0], chg = w.p ? Math.round((cur / w.p - 1) * 1000) / 10 : null, hi = hm.get(w.k);
+    return `<tr ${rowAttr(x)}><td>${starHtml(x)}<strong>${esc(x.name)}</strong><span class="tag">${esc(x.gu)} ${esc(x.dong)}</span></td><td>${x.a}㎡ (${x.py}평)</td><td>${w.d.slice(2)}</td>
+      <td>${w.p ? fmtEok(w.p) : "–"}</td><td class="price">${fmtEok(cur)}</td><td>${pctHtml(chg)}</td>
+      <td>${fmtEok(x.last[0])}<span class="tag">${x.last[1].slice(2)}</span></td><td>${x.rate != null ? x.rate + "%" : "–"}</td>
+      <td>${hi ? `<span class="tag tag-hi">${hi.date.slice(5)} ${fmtEok(hi.price)}</span>` : "–"}</td></tr>`;
+  }).join("");
+  t.innerHTML = th + body;
+}
+
+// ── 전세 갱신 인상률 ──
+let RN = null, rnReady = false;
+async function initRenewal() {
+  if (!rnReady) {
+    rnReady = true;
+    try { const r = await fetch("data/renewal.json"); if (!r.ok) throw new Error(); RN = await r.json(); }
+    catch(e) { rnReady = false; document.getElementById("rn-kpi").innerHTML = `<div class="empty">갱신 데이터가 아직 없습니다. 서버가 다음에 수집을 돌리면 생깁니다.</div>`; return; }
+    const sel = document.getElementById("rn-gu");
+    ["서울 전체", ...GU_LIST].forEach(g => { const o = document.createElement("option"); o.value = g; o.textContent = g; sel.appendChild(o); });
+    sel.addEventListener("change", renderRenewal);
+  }
+  renderRenewal();
+}
+function renderRenewal() {
+  if (!RN) return;
+  const gu = document.getElementById("rn-gu").value || "서울 전체";
+  const d = RN.gu[gu] || [];
+  const labels = RN.months.map(m => m.slice(2,4) + "." + m.slice(4));
+  const p0 = RN.months.indexOf(RN.partial_from), pi = p0 < 0 ? RN.months.length : p0;
+  const pick = k => d.map((s, i) => (s && i < pi) ? s[k] : null);
+  const r = RN.recent.find(x => x.gu === gu);
+  const rm = RN.recent_months;
+  document.getElementById("rn-kpi").innerHTML = r
+    ? kpi("평균 인상률", r.mean + "%", `${ymLabel(rm[0])}~${ymLabel(rm[rm.length-1])} · ${r.n.toLocaleString()}건`, "") +
+      kpi("5% 초과 인상 비율", r.over5 + "%", "청구권 없이 합의로 더 올린 비율", "") +
+      kpi("동결·인하 비율", (r.flat + r.down).toFixed(1) + "%", `동결 ${r.flat}% · 인하 ${r.down}%`, "") +
+      kpi("갱신청구권 사용률", r.use + "%", "사용 시 인상률 5% 상한", "")
+    : `<div class="empty">표본이 적어 표시하지 않아요 (최근 3개월 갱신 30건 미만)</div>`;
+  destroy("rn-mean"); destroy("rn-over");
+  const s1 = cv("--s1");
+  charts["rn-mean"] = new Chart(document.getElementById("rn-mean"), {type: "line", data: {labels, datasets: [{label: "평균 인상률", data: pick("mean"), borderColor: s1, backgroundColor: s1, spanGaps: true}]}, options: cOpts("%")});
+  charts["rn-over"] = new Chart(document.getElementById("rn-over"), {type: "line", data: {labels, datasets: [{label: "5% 초과 비율", data: pick("over5"), borderColor: s1, backgroundColor: s1, spanGaps: true}]}, options: cOpts("%")});
+  setTwin("rn-mean", labels, [{name: "평균 인상률(%)", data: pick("mean")}]);
+  setTwin("rn-over", labels, [{name: "5% 초과 비율(%)", data: pick("over5")}]);
+  document.getElementById("rn-tt").textContent = `구별 갱신 인상률 (${ymLabel(rm[0])}~${ymLabel(rm[rm.length-1])} 합산)`;
+  const th = "<tr><th>구</th><th>건수</th><th>평균</th><th>중위</th><th>5% 초과</th><th>동결</th><th>인하</th><th>청구권 사용</th></tr>";
+  const rows = RN.recent.map(x => `<tr${x.gu === gu ? ' style="background:rgba(255,255,255,.04)"' : ""}><td><strong>${x.gu}</strong></td><td>${x.n.toLocaleString()}</td><td>${x.mean}%</td><td>${x.med}%</td><td>${x.over5}%</td><td>${x.flat}%</td><td>${x.down}%</td><td>${x.use}%</td></tr>`).join("");
+  document.getElementById("rn-table").innerHTML = th + rows;
+}
+
+// ── 하락 거래 / 취소 비율 ──
+let DR = null, CXR = null, drReady = false;
+async function initDrops() {
+  if (!drReady) {
+    drReady = true;
+    try {
+      const [a, b] = await Promise.all([fetch("data/price_drops.json"), fetch("data/cancel.json")]);
+      if (!a.ok || !b.ok) throw new Error();
+      DR = await a.json(); CXR = await b.json();
+    } catch(e) { drReady = false; document.getElementById("d-summary").textContent = "데이터가 아직 없습니다. 서버가 다음에 수집을 돌리면 생깁니다."; return; }
+    const gs = document.getElementById("d-gu"); GU_LIST.forEach(g => { const o = document.createElement("option"); o.value = g; o.textContent = g; gs.appendChild(o); });
+    const cs = document.getElementById("cx-gu"); ["서울 전체", ...GU_LIST].forEach(g => { const o = document.createElement("option"); o.value = g; o.textContent = g; cs.appendChild(o); });
+    ["d-gu", "d-min", "d-sus"].forEach(id => document.getElementById(id).addEventListener("change", renderDrops));
+    cs.addEventListener("change", renderCancel);
+  }
+  renderDrops(); renderCancel();
+}
+function renderDrops() {
+  if (!DR) return;
+  const gu = document.getElementById("d-gu").value, mn = +document.getElementById("d-min").value, hide = document.getElementById("d-sus").value === "hide";
+  const rows = DR.items.filter(x => (!gu || x.gu === gu) && x.drop <= -mn && (!hide || x.drop >= -30));
+  document.getElementById("d-summary").textContent = `조건에 맞는 거래 ${rows.length}건 (하락률 큰 순, 최대 80건 표시)`;
+  const th = "<tr><th>단지</th><th>전용</th><th>거래일</th><th>거래가</th><th>직전 1년 중위</th><th>하락</th><th>층</th></tr>";
+  const body = rows.slice(0, 80).map(x => `<tr ${rowAttr(x)}>
+    <td>${starHtml(x)}<strong>${esc(x.name)}</strong><span class="tag">${esc(x.gu)} ${esc(x.dong)}</span></td><td>${x.a}㎡</td><td>${x.date.slice(5)}</td>
+    <td class="price">${fmtEok(x.price)}${x.price < x.ref_min ? '<span class="tag">신저가</span>' : ""}</td>
+    <td>${fmtEok(x.ref)}<span class="tag">${x.ref_n}건</span></td><td><span class="num-down">${x.drop}%</span>${x.drop < -30 ? '<span class="tag">특수거래 의심</span>' : ""}</td>
+    <td>${x.floor ?? "–"}${x.floor != null && x.floor <= 3 ? '<span class="tag">저층</span>' : ""}</td></tr>`).join("");
+  document.getElementById("d-table").innerHTML = th + (body || `<tr><td colspan="7" class="empty">조건에 맞는 거래가 없어요</td></tr>`);
+}
+function renderCancel() {
+  if (!CXR) return;
+  const gu = document.getElementById("cx-gu").value || "서울 전체";
+  const d = CXR.gu[gu] || [];
+  const n = CXR.months.length - CXR.partial_last;
+  const labels = CXR.months.slice(0, n).map(m => m.slice(2,4) + "." + m.slice(4));
+  const v = d.slice(0, n);
+  destroy("cx-chart");
+  const s1 = cv("--s1");
+  charts["cx-chart"] = new Chart(document.getElementById("cx-chart"), {type: "line", data: {labels, datasets: [{label: "해제 비율", data: v, borderColor: s1, backgroundColor: s1, spanGaps: true}]}, options: cOpts("%", {zero: true})});
+  setTwin("cx-chart", labels, [{name: "해제 비율(%)", data: v}]);
+}
+
+// ── 자금 계획 ──
+const PL_IDS = ["pl-cash","pl-inc","pl-debt","pl-rate","pl-stress","pl-years","pl-ltv","pl-dsr","pl-cap"];
+let planReady = false;
+const pf = id => { const v = document.getElementById(id).value; return v === "" ? null : parseFloat(v); };
+const annF = (rate, yrs) => { const i = rate / 1200, n = yrs * 12; return i === 0 ? n : (1 - Math.pow(1 + i, -n)) / i; };
+function acqRate(p) { const e = p / 10000; const t = e <= 6 ? 0.01 : e <= 9 ? (e * 2 / 3 - 3) / 100 : 0.03; return t * 1.1; }   // 취득세 + 지방교육세(취득세의 10%)
+function brokerRate(p) { const e = p / 10000; return (e < 0.5 ? 0.006 : e < 2 ? 0.005 : e < 9 ? 0.004 : e < 12 ? 0.005 : e < 15 ? 0.006 : 0.007) * 1.1; }
+const costOf = p => p * (acqRate(p) + brokerRate(p) + 0.003);
+function loanOf(p, P) {
+  const c = {LTV: p * P.ltv / 100};
+  if (P.cap) c["가격별 한도"] = p <= 150000 ? 60000 : p <= 250000 ? 40000 : 20000;
+  if (P.inc) { const allow = (P.inc * P.dsr / 100 - P.debt) / 12; c.DSR = allow > 0 ? allow * annF(P.rate + P.stress, P.years) : 0; }
+  let k = null, v = Infinity; for (const [a, b] of Object.entries(c)) if (b < v) { v = b; k = a; }
+  return {loan: Math.max(0, Math.min(v, p)), by: k};
+}
+function initPlan() {
+  if (!planReady) {
+    planReady = true;
+    try { const s = JSON.parse(lsGet("plan_v1") || "{}"); PL_IDS.forEach(id => { if (s[id] != null && s[id] !== "") document.getElementById(id).value = s[id]; }); } catch(e) {}
+    if (!document.getElementById("pl-cash").value) { const c = lsGet("cand_cash"); if (c) document.getElementById("pl-cash").value = c; }
+    PL_IDS.forEach(id => document.getElementById(id).addEventListener("input", calcPlan));
+  }
+  calcPlan();
+}
+function calcPlan() {
+  const o = {}; PL_IDS.forEach(id => o[id] = document.getElementById(id).value); lsSet("plan_v1", JSON.stringify(o));
+  const cash = pf("pl-cash"), P = {inc: pf("pl-inc"), debt: pf("pl-debt") || 0, rate: pf("pl-rate") ?? 4, stress: pf("pl-stress") ?? 0, years: pf("pl-years") || 30, ltv: pf("pl-ltv") ?? 40, dsr: pf("pl-dsr") ?? 40, cap: document.getElementById("pl-cap").value === "1"};
+  const R = document.getElementById("pl-result"), T = document.getElementById("pl-table");
+  if (cash == null) { R.innerHTML = `<div class="empty">보유 현금을 입력하면 계산해요</div>`; T.innerHTML = ""; return; }
+  const C = cash * 10000;
+  let best = null;
+  for (let p = 5000; p <= 500000; p += 100) { const L = loanOf(p, P); if (p - L.loan + costOf(p) <= C) best = {p, ...L}; }
+  const monthly = L => L * (P.rate / 1200) / (1 - Math.pow(1 + P.rate / 1200, -P.years * 12));
+  if (!best) R.innerHTML = `<div class="plan-big">5천만원 이하만 가능<small>입력한 조건에선 대출을 받아도 필요 현금이 부족해요</small></div>`;
+  else R.innerHTML = `<div class="plan-big">최대 약 ${fmtEok(best.p)}<small>대출 ${fmtEok(best.loan)} (${best.by} 기준) · 필요 현금 ${fmtEok(best.p - best.loan + costOf(best.p))} · 월 상환 ${Math.round(monthly(best.loan)).toLocaleString()}만원</small></div>
+    <div style="margin-top:10px"><button class="budget-btn" id="pl-go">이 가격 이하 후보 단지 보기</button></div>`;
+  const go = document.getElementById("pl-go");
+  if (go) go.onclick = () => {
+    document.querySelector('.nav-tab[data-page="candidates"]').click();
+    const el = document.getElementById("c-max"); el.value = Math.floor(best.p / 500) / 20; el.dispatchEvent(new Event("input"));
+  };
+  const th = "<tr><th>매매가</th><th>대출 가능</th><th>결정 요인</th><th>필요 현금</th><th>월 상환</th><th>내 현금 대비</th></tr>";
+  const body = [50000, 70000, 90000, 100000, 120000, 150000, 200000, 250000].map(p => {
+    const L = loanOf(p, P), need = p - L.loan + costOf(p), diff = C - need;
+    return `<tr><td class="price">${fmtEok(p)}</td><td>${fmtEok(L.loan)}</td><td>${L.by}</td><td>${fmtEok(need)}</td><td>${Math.round(monthly(L.loan)).toLocaleString()}만</td>
+      <td>${diff >= 0 ? `<span class="num-up">여유 ${fmtEok(diff)}</span>` : `<span class="neg">부족 ${fmtEok(-diff)}</span>`}</td></tr>`;
+  }).join("");
+  T.innerHTML = th + body;
 }
 
 load();

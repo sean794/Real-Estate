@@ -80,10 +80,68 @@ check("단지: 전세가율 있는 단지는 180일 내 거래 있음", all(x["b
 H = json.load(open("docs/data/new_highs.json"))["items"]
 check("신고가: 모두 직전 최고가 초과", all(x["price"] > x["prev_high"] for x in H))
 
+
+# ── 추가 분석(갱신 인상률 / 해제 비율 / 하락 거래 / 단지 이력) ──
+import csv, random, datetime
+RN = json.load(open("docs/data/renewal.json"))
+rm = RN["recent_months"][-1]; gi = RN["months"].index(rm)
+v = []
+seen = set()
+for r in csv.DictReader(open(f"data/apt_rent/{rm}.csv", encoding="utf-8-sig")):
+    if r["구"] != "강남구" or r["계약구분"] != "갱신": continue
+    k = tuple(r[c] for c in ("법정동", "아파트명", "전용면적", "층", "보증금", "월세", "일"))
+    if k in seen: continue
+    seen.add(k)
+    try:
+        d_, p_ = float(r["보증금"].replace(",", "")), float(r["종전보증금"].replace(",", "")); m_, pm_ = float(r["월세"] or 0), float(r["종전월세"] or 0)
+    except ValueError: continue
+    if m_ == 0 and pm_ == 0 and p_ > 0 and 0.5 <= d_ / p_ <= 2: v.append((d_ / p_ - 1) * 100)
+s_ = RN["gu"]["강남구"][gi]
+check(f"갱신 인상률: 원본 독립 재계산 일치(강남구 {rm})", s_ and s_["n"] == len(v) and abs(s_["mean"] - st.mean(v)) < 0.02 and abs(s_["med"] - st.median(v)) < 0.02,
+      f"JSON n={s_ and s_['n']} 평균={s_ and s_['mean']} / 재계산 n={len(v)} 평균={st.mean(v):.2f}")
+allr = [x for x in RN["gu"]["서울 전체"] if x]
+check("갱신 인상률: 서울 평균이 현실 범위(-5~20%)", all(-5 <= x["mean"] <= 20 for x in allr), f"{min(x['mean'] for x in allr)}~{max(x['mean'] for x in allr)}")
+
+CN = json.load(open("docs/data/cancel.json"))
+cm = CN["months"][-4]; ci = CN["months"].index(cm)
+tot = c_ = 0
+for r in csv.DictReader(open(f"data/apt_trade/{cm}.csv", encoding="utf-8-sig")):
+    tot += 1; c_ += (r.get("해제여부") or "").strip() == "O"
+check(f"해제 비율: 원본 재계산 일치({cm})", abs(CN["gu"]["서울 전체"][ci] - c_ / (tot - c_) * 100) < 0.02, f"JSON {CN['gu']['서울 전체'][ci]} / 재계산 {c_/(tot-c_)*100:.2f}")
+allc = [x for x in CN["gu"]["서울 전체"] if x is not None]
+check("해제 비율: 0~30% 범위", all(0 <= x <= 30 for x in allc), f"최대 {max(allc)}", warn=True)
+
+random.seed(7)
+C = json.load(open("docs/data/complexes.json"))["items"]
+cache, bad = {}, []
+for x in random.sample(C, 300):
+    m = cache.setdefault(x["gu"], json.load(open(f"docs/data/cx/{x['gu']}.json")))
+    h = m.get(f"{x['dong']}|{x['name']}|{x['a']}")
+    if not h or len(h["t"]) != x["n"] or h["t"][-1][0] // 100 != int(x["last"][1][:7].replace("-", "")): bad.append(x["name"])
+check("단지 상세 이력: complexes.json과 거래 건수·최근 거래월 일치(300개 표본)", not bad, f"불일치 {bad[:5]}")
+
+PD = json.load(open("docs/data/price_drops.json"))["items"]
+bad = []
+for x in random.sample(PD, min(25, len(PD))):
+    h = cache.setdefault(x["gu"], json.load(open(f"docs/data/cx/{x['gu']}.json")))[f"{x['dong']}|{x['name']}|{x['a']}"]
+    dt = int(x["date"].replace("-", ""))
+    lo = int((datetime.date.fromisoformat(x["date"]) - datetime.timedelta(days=365)).strftime("%Y%m%d"))
+    pr = [t[1] for t in h["t"] if lo <= t[0] < dt]
+    if len(pr) != x["ref_n"] or abs(st.median(pr) - x["ref"]) > 1 or abs((x["price"] / x["ref"] - 1) * 100 - x["drop"]) > 0.06: bad.append(x["name"])
+check("하락 거래: 직전 1년 중위가·하락률 독립 재계산 일치", not bad, f"불일치 {bad[:5]}")
+check("하락 거래: 모두 10% 이상 하락·표본 3건 이상", all(x["drop"] <= -10 and x["ref_n"] >= 3 for x in PD))
+
+# 데이터 신선도
+upd = datetime.date.fromisoformat(S["updated"]); age = (datetime.date.today() - upd).days
+check("summary 갱신일 3일 이내", age <= 3, f"{S['updated']} ({age}일 전)", warn=True)
+
 # NaN/무한대
 txt = open("docs/data/summary.json", encoding="utf-8").read()
 check("summary에 NaN/Infinity 없음", "NaN" not in txt and "Infinity" not in txt)
 
+fails_ = [r for r in res if r[0] == "FAIL"]
+Path("docs/data/status.json").write_text(json.dumps({"checked": datetime.date.today().isoformat(), "total": len(res), "fail": len(fails_),
+    "warn": sum(r[0] == "WARN" for r in res), "failed": [r[1] for r in fails_][:8], "updated": S["updated"]}, ensure_ascii=False), encoding="utf-8")
 out = "\n".join(f"[{s}] {n}  {d}" for s, n, d in res)
 Path("logs").mkdir(exist_ok=True); Path("logs/validation.txt").write_text(out + "\n", encoding="utf-8")
 print(out); fails = [r for r in res if r[0] == "FAIL"]

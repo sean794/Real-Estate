@@ -16,6 +16,9 @@ TMP=$(mktemp)
   echo "--- 분석 ---"
   python3 scripts/build_analytics.py 2>&1 | tail -n 10
   echo "analytics exit: ${PIPESTATUS[0]}"
+  echo "--- 추가 분석 ---"
+  python3 scripts/build_extra.py 2>&1 | tail -n 8
+  echo "extra exit: ${PIPESTATUS[0]}"
   echo "--- 검증 ---"
   python3 scripts/validate_data.py 2>&1 | tail -n 30
   free -m | sed -n '1,2p'
@@ -24,6 +27,11 @@ TMP=$(mktemp)
 
 mkdir -p logs
 cp "$TMP" logs/last_run.log; rm -f "$TMP"
+
+# 이상 징후가 있으면 알림(NTFY_TOPIC 설정 시) — 화면 상단 배지에도 표시됨(docs/data/status.json)
+if ! grep -q "^=== end ===" logs/last_run.log || grep -qE "^\[FAIL\]|Traceback|Killed|(analytics|extra) exit: [1-9]|^exit: [1-9]" logs/last_run.log; then
+  python3 scripts/notify.py "서울집 데이터 수집 이상" "$(grep -E '^\[FAIL\]|Traceback|Killed|exit: [1-9]' logs/last_run.log | head -5)"
+fi
 
 git add data/ docs/data/ logs/
 if ! git diff --cached --quiet; then
