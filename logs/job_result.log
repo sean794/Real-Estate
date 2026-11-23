@@ -1,23 +1,11 @@
-=== job 'extra' (id 1795406521) start 2026-11-23 04:05:02 UTC ===
-  renewal.json: 85KB
-  cancel.json: 5KB
-  price_drops.json: 20KB
-  cx/*.json: 25개 구 5757KB
-갱신/해제/하락 완료: 하락거래 118건
-피크 메모리 MB: 130
-[OK] 신고가: 모두 직전 최고가 초과  
-[OK] 갱신 인상률: 원본 독립 재계산 일치(강남구 202610)  JSON n=281 평균=5.88 / 재계산 n=281 평균=5.88
-[OK] 갱신 인상률: 서울 평균이 현실 범위(-5~20%)  -0.22~7.41
-[OK] 해제 비율: 원본 재계산 일치(202608)  JSON 3.92 / 재계산 3.92
-[OK] 해제 비율: 0~30% 범위  최대 13.02
-[OK] 단지 상세 이력: complexes.json과 거래 건수·최근 거래월 일치(300개 표본)  불일치 []
-[OK] 하락 거래: 직전 1년 중위가·하락률 독립 재계산 일치  불일치 []
-[OK] 하락 거래: 모두 10% 이상 하락·표본 3건 이상  
-[OK] summary 갱신일 3일 이내  2026-11-22 (1일 전)
-[OK] summary에 NaN/Infinity 없음  
+=== job 'probe_apply' (id 1795406766) start 2026-11-23 04:10:02 UTC ===
+--- MOLIT_TRADE_API_KEY 로 호출
+{"code":-401,"msg":"유효하지 않은 인증키 입니다."}
 
-검증 29개 중 FAIL 0 / WARN 0
-               total        used        free      shared  buff/cache   available
-Mem:             416         120         135           1         159         259
-Swap:           1023          64         959
-=== end 2026-11-23 04:05:43 UTC ===
+--- MOLIT_RENT_API_KEY 로 호출
+{"code":-401,"msg":"유효하지 않은 인증키 입니다."}
+
+--- REB_API_KEY 로 호출
+{"code":-4,"msg":"등록되지 않은 인증키 입니다."}
+
+=== end 2026-11-23 04:10:04 UTC ===
