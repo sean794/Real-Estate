@@ -1,38 +1,14 @@
-=== job 'health' (id 1795405211) start 2026-11-23 03:45:02 UTC ===
---- uptime / reboot
- 03:45:02 up 87 days,  2:52,  0 users,  load average: 0.00, 0.00, 0.00
-reboot   system boot  6.8.0-1060-aws   Fri Aug 28 00:52   still running
-
-wtmp begins Fri Aug 28 00:52:56 2026
---- crontab
-CRON_TZ=Asia/Seoul
-30 0 * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh
-*/5 * * * * flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/poll.sh
---- cron 실행 기록(최근)
-Nov 22 00:30:01 ip-172-26-3-48 CRON[336159]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 23 00:30:01 ip-172-26-3-48 CRON[343438]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 15 00:30:01 ip-172-26-3-48 CRON[278428]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 16 00:30:01 ip-172-26-3-48 CRON[286858]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 17 00:30:01 ip-172-26-3-48 CRON[293731]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 18 00:30:01 ip-172-26-3-48 CRON[301797]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 19 00:30:01 ip-172-26-3-48 CRON[309347]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 20 00:30:01 ip-172-26-3-48 CRON[316740]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
-Nov 21 00:30:01 ip-172-26-3-48 CRON[326970]: (ubuntu) CMD (flock -n /tmp/realestate.lock /home/ubuntu/Real-Estate/server/run_daily.sh)
---- 디스크/메모리
-/dev/root        20G  5.8G   14G  31% /
-Mem:             416         127          46           1         242         252
---- 저장소 상태
-## main...origin/main
- M logs/job_result.log
-7ad8fcf 11-23 12:40 server: health 재요청
-0678ab8 11-23 03:40 chore: 서버 작업 결과 (server/jobs/health.sh / 1795404914)
-86ffcf4 11-23 12:35 server: health 점검
---- 최근 live 로그 끝
-
-검증 21개 중 FAIL 0 / WARN 0
-               total        used        free      shared  buff/cache   available
-Mem:             416         141          61           1         213         238
+=== job 'oomcheck' (id 1795405553) start 2026-11-23 03:50:02 UTC ===
+--- OOM 흔적
+[Wed Sep  9 06:14:32 2026] Out of memory: Killed process 42925 (localedef) total-vm:125604kB, anon-rss:113208kB, file-rss:1784kB, shmem-rss:0kB, UID:0 pgtables:296kB oom_score_adj:0
+[Thu Nov  5 05:55:40 2026] Out of memory: Killed process 185899 (python3.10) total-vm:172580kB, anon-rss:157804kB, file-rss:0kB, shmem-rss:0kB, UID:0 pgtables:384kB oom_score_adj:0
+--- swap
+NAME      TYPE  SIZE  USED PRIO
+/swapfile file 1024M 61.5M   -2
+Mem:             416         128          40           1         247         251
+Swap:           1023          61         962
+--- 로컬 미푸시 커밋
+--- 일일 실행 소요/피크
+=== 2026-11-22 00:30:01 UTC start ===
 === end ===
---- 에러 흔적
-1
-=== end 2026-11-23 03:45:02 UTC ===
+=== end 2026-11-23 03:50:02 UTC ===
