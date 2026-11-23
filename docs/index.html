@@ -494,7 +494,7 @@
     <div class="section" style="padding-top:20px">
       <div class="card">
         <div class="card-title">내 자금으로 살 수 있는 최대 매매가</div>
-        <div class="info-box">대출 규제 값은 기본값(규제지역 LTV 40%, 주택가격별 한도 15억 이하 6억 · 15~25억 4억 · 25억 초과 2억, DSR 40%, 수도권 스트레스 가산금리 3%p)이며 정책이 바뀌면 직접 고치세요. 입력은 이 브라우저에만 저장됩니다. 참고용 계산이고 실제 한도는 은행 심사를 따릅니다.</div>
+        <div class="info-box">대출 규제 값은 기본값(생애최초 LTV 70% · 일반 무주택 40%, 주택가격별 한도 15억 이하 6억 · 15~25억 4억 · 25억 초과 2억, DSR 40%, 수도권 스트레스 가산금리 3%p)이며 정책이 바뀌면 직접 고치세요. 입력은 이 브라우저에만 저장됩니다. 참고용 계산이고 실제 한도는 은행 심사를 따릅니다.</div>
         <div class="cand-filters" id="pl-inputs">
           <label>보유 현금 (억)<input type="number" id="pl-cash" step="0.1" min="0" placeholder="예: 3"></label>
           <label>연 소득 합계 (만원)<input type="number" id="pl-inc" step="100" min="0" placeholder="비우면 DSR 미적용"></label>
@@ -502,7 +502,8 @@
           <label>대출금리 (%)<input type="number" id="pl-rate" step="0.1" value="4.0"></label>
           <label>스트레스 가산 (%p)<input type="number" id="pl-stress" step="0.1" value="3.0"></label>
           <label>만기 (년)<input type="number" id="pl-years" step="5" value="30"></label>
-          <label>LTV (%)<input type="number" id="pl-ltv" step="5" value="40"></label>
+          <label>차주 유형<select id="pl-type"><option value="70">생애최초 (LTV 70%)</option><option value="40">무주택 일반 (LTV 40%)</option><option value="">직접 입력</option></select></label>
+          <label>LTV (%)<input type="number" id="pl-ltv" step="5" value="70"></label>
           <label>DSR (%)<input type="number" id="pl-dsr" step="5" value="40"></label>
           <label>가격별 한도<select id="pl-cap"><option value="1">적용 (6억/4억/2억)</option><option value="0">미적용</option></select></label>
         </div>
@@ -1262,7 +1263,7 @@ function runBudget() {
 }
 
 // ══ 추가 기능: 공통(관심·상세) / 갱신 / 하락·취소 / 자금 계획 ═══════════
-const APP_V = "2026-11-23.1";
+const APP_V = "2026-11-23.2";
 const _fetch = window.fetch.bind(window);
 window.fetch = (u, o) => _fetch(u, (typeof u === "string" && u.startsWith("data/")) ? {cache:"no-cache", ...o} : o);
 try {  // 새 버전이 배포됐는데 옛 화면이 캐시돼 있으면 한 번만 새로고침
@@ -1486,7 +1487,7 @@ function renderCancel() {
 }
 
 // ── 자금 계획 ──
-const PL_IDS = ["pl-cash","pl-inc","pl-debt","pl-rate","pl-stress","pl-years","pl-ltv","pl-dsr","pl-cap"];
+const PL_IDS = ["pl-type","pl-cash","pl-inc","pl-debt","pl-rate","pl-stress","pl-years","pl-ltv","pl-dsr","pl-cap"];
 let planReady = false;
 const pf = id => { const v = document.getElementById(id).value; return v === "" ? null : parseFloat(v); };
 const annF = (rate, yrs) => { const i = rate / 1200, n = yrs * 12; return i === 0 ? n : (1 - Math.pow(1 + i, -n)) / i; };
@@ -1506,6 +1507,8 @@ function initPlan() {
     try { const s = JSON.parse(lsGet("plan_v1") || "{}"); PL_IDS.forEach(id => { if (s[id] != null && s[id] !== "") document.getElementById(id).value = s[id]; }); } catch(e) {}
     if (!document.getElementById("pl-cash").value) { const c = lsGet("cand_cash"); if (c) document.getElementById("pl-cash").value = c; }
     PL_IDS.forEach(id => document.getElementById(id).addEventListener("input", calcPlan));
+    document.getElementById("pl-type").addEventListener("change", e => { if (e.target.value) document.getElementById("pl-ltv").value = e.target.value; calcPlan(); });
+    document.getElementById("pl-ltv").addEventListener("input", () => { const t = document.getElementById("pl-type"); t.value = ["70","40"].includes(document.getElementById("pl-ltv").value) ? document.getElementById("pl-ltv").value : ""; });
   }
   calcPlan();
 }
